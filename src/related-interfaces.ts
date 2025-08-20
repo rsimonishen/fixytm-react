@@ -15,6 +15,8 @@ export interface Video {
         thumbnails: {
             default: {
                 url: string;
+                width: number;
+                height: number;
             }
         };
         channelTitle: string;

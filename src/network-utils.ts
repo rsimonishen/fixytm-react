@@ -19,15 +19,14 @@ export async function fetchJSON (req: RequestString, headers?: Record<string, st
     let output: string = "";
     await new Promise((resolve, reject) => {
         const xhr: XMLHttpRequest = new XMLHttpRequest();
-        if (headers) for (const key in headers) xhr.setRequestHeader(key, headers[key]);
         xhr.open("GET", req.getContent());
+        if (headers) for (const key in headers) xhr.setRequestHeader(key, headers[key]);
         xhr.onreadystatechange = () => {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 console.log(`FIX.YTM React: fetched json object successfully, status: 200; response: \n${xhr.responseText}`);
                 output = xhr.responseText;
                 resolve(0);
             } else if (xhr.readyState === 4 && xhr.status !== 200) {
-                output = "";
                 reject(new Error(`FIX.YTM React: failed to fetch json object, status: ${xhr.status}; response: \n${xhr.responseText}`))
             } else {
                 console.log(`FIX.YTM React: fetching json object; ready state: ${xhr.readyState}`);
