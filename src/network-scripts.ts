@@ -1,8 +1,9 @@
-import type { Video, PlaylistResponse, VideosResponse, IpinfoResponse } from "./related-interfaces";
+import type {Video, PlaylistResponse, VideosResponse, IpinfoResponse, CommentsResponse} from "./related-interfaces";
 import { fetchJSON, RequestString } from "./network-utils";
 import { filterVideos } from "./helper-scripts";
 import fixytm from "./cache-init";
 import { getRelevantGapiKey } from "./cache-scripts";
+import { type Comment } from "./related-interfaces";
 
 export async function fetchUserCountry (): Promise<string> {
     const req: RequestString = new RequestString("https://ipinfo.io/json");
@@ -24,11 +25,11 @@ export async function fetchPlaylist (id: string, [key, isOauthAccessToken] = get
     if (isOauthAccessToken) args.push(`access_token=${key}`);
     else args.push(`key=${key}`)
     let undone: boolean = true;
-    while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH) {
+    while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_PLAYLIST) {
         const req: RequestString = new RequestString(`https://www.googleapis.com/youtube/v3/playlistItems?${args.join("&")}`);
         let response: string;
         try { response = await fetchJSON(req, headers) } catch (e) {console.error(`FIX.YTM React error: fetchPlaylist: ${e}`); return []}
-        const obj: PlaylistResponse = JSON.parse(response) as PlaylistResponse;
+        const obj = JSON.parse(response) as PlaylistResponse;
         for (const item of obj.items) output.push(item.contentDetails.videoId)
         if (obj.nextPageToken) { cycle++; args[4] = `pageToken=${obj.nextPageToken}` } else undone = false;
     }
@@ -50,17 +51,44 @@ export async function fetchVideos (
     if (isOauthAccessToken) args.push(`access_token=${key}`);
     else args.push(`key=${key}`)
     let undone: boolean = true;
-    while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH) {
+    while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_VIDEO) {
         const idsPortion: string[] = [];
         for (let i = 0; i < 50; i++) (ids[i + 50 * cycle]) && idsPortion.push(ids[i + 50 * cycle])
         const req: RequestString = new RequestString(`https://www.googleapis.com/youtube/v3/videos?${args.join("&")}&id=${idsPortion.join("%2C")}`);
         let response: string;
         try { response = await fetchJSON(req) } catch (e) {console.error(`FIX.YTM React error: fetchVideos: ${e}`); return []}
-        const obj: VideosResponse = JSON.parse(response) as VideosResponse;
+        const obj = JSON.parse(response) as VideosResponse;
         for (const video of obj.items) output.push(video)
         if (output.length < ids.length) cycle++; else undone = false;
     }
     if (filter) output = filterVideos(output)
     if (cacheVideos) fixytm.cache.videos.push(...output);
+    return output;
+}
+
+export async function fetchComments(
+    videoId: string,
+    cacheComments: boolean = false,
+    [key, isOauthAccessToken] = getRelevantGapiKey()): Promise<Comment[] | Error> {
+    const output: Comment[] = [];
+    let cycle: number = 0;
+    const args: string[] = [
+        "part=snippet%2Creplies",
+        `maxResults=${fixytm.MAX_COMMENTS_PAGE_ITEMS}`,
+        "order=relevance",
+        `videoId=${videoId}`
+    ]
+    if (isOauthAccessToken) args.push(`access_token=${key}`);
+    else args.push(`key=${key}`)
+    let undone: boolean = true;
+    while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
+        const req: RequestString = new RequestString(`https://www.googleapis.com/youtube/v3/commentThreads?${args.join("&")}`);
+        let response: string;
+        try { response = await fetchJSON(req) } catch (e) { return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.`) }
+        const obj = JSON.parse(response) as CommentsResponse;
+        for (const comment of obj.items) output.push(comment)
+        if (obj.nextPageToken) { cycle++; args[5] = `pageToken=${obj.nextPageToken}` } else undone = false;
+    }
+    if (cacheComments) fixytm.cache.videos.find(video => video.id === videoId)!.comments = output;
     return output;
 }

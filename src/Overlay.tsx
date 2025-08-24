@@ -1,8 +1,16 @@
 import { type ReactElement, useCallback, useEffect, useState } from 'react'
 import './Overlay.css'
-import { collectVideo, fetchPlaylistId, fetchVideoId, formatDate, formatDuration } from "./helper-scripts";
+import {
+    collectComments,
+    collectVideo, commentContentWarning,
+    fetchPlaylistId,
+    fetchVideoId,
+    formatDate,
+    formatDuration
+} from "./helper-scripts";
 import { matchRadioStation, sortPlaylist } from "./main-scripts";
 import fixytm from "./cache-init";
+import type {Comment} from "./related-interfaces";
 
 export function Overlay(): ReactElement {
     const fixytmObserverTargets: Element[] = [
@@ -13,7 +21,6 @@ export function Overlay(): ReactElement {
     const fixytmObserver: MutationObserver = fixytm.observer || new MutationObserver(() => {
         setMode(window.location.pathname);
         console.log("FIX.YTM React mutation observer: target DOM has changed")})
-    for (const target of fixytmObserverTargets) fixytmObserver.observe(target, { attributes: true, childList: true })
     fixytm.observer = fixytmObserver;
 
     const [overlay, showOverlay] = useState<boolean>(false);
@@ -21,9 +28,28 @@ export function Overlay(): ReactElement {
     const [authorised, authorise] = useState<boolean>(false);
     const [videoPanel, showVideoPanel] = useState<boolean>(false);
     const [viewedVideoId, setViewedVideoId] = useState<string>("");
+    const [viewedVideoComments, setViewedVideoComments] = useState<Comment[] | Error>([]);
+    // const [viewedVideoCommentsDisabled, setViewedVideoCommentsDisabled] = useState<boolean>(false);
+
     useEffect(() => {
-        if (window.fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2"
-            && !window.fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRED) authorise(true);
+        setViewedVideoComments([]);
+    }, [viewedVideoId]);
+
+    useEffect(() => {
+        if (!fixytm.observerConnected) {
+            try {
+                fixytmObserverTargets.forEach(target => fixytmObserver.observe(target, {
+                    childList: true,
+                    attributes: true,
+                }))
+                fixytm.observerConnected = true;
+            }
+            catch (e) {
+                console.error(`FIX.YTM React error: couldn't connect the observer: ${e}`);
+            }
+        }
+        if (fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2"
+            && !fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRED) authorise(true);
         else authorise(false)
     })
 
@@ -67,8 +93,9 @@ export function Overlay(): ReactElement {
                 const viewVideoButton = <button
                     className={"fix-ytm-functionality-item"}
                     onClick={async () => {
-                        await collectVideo(fetchVideoId());
-                        setViewedVideoId(fetchVideoId());
+                        const id: string = fetchVideoId();
+                        await collectVideo(id);
+                        setViewedVideoId(id);
                         showVideoPanel(true);
                     }}
                     title={"View current video statistics and data in a separate tab"}>View video</button>
@@ -94,24 +121,122 @@ export function Overlay(): ReactElement {
         const video = fixytm.cache.videos.find(video => video.id === x);
         return video ? <>
             <header id={"fix-ytm-video-tab-header"} className={"fix-ytm-flex-wrapper"} style={{marginTop: `32px`}}>
-                <img id={"fix-ytm-video-tab-thumbnail"} src={video.snippet.thumbnails.default.url} alt={"Video thumbnail"} style={{width: '30%'}}/>
-                <div style={{width: `60%`}}>
-                    <p id={"fix-ytm-video-tab-title"} className={"fix-ytm-video-data"} title={"Song name"}>
+                <img id={"fix-ytm-video-tab-thumbnail"} src={video.snippet.thumbnails.default.url} alt={"Video thumbnail"} style={{width: '25%'}}/>
+                <div style={{width: `70%`}}>
+                    <p className={"fix-ytm-video-data"} title={"Song name"}>
                         {video.snippet.title}
                     </p>
-                    <p id={"fix-ytm-video-tab-author"} className={"fix-ytm-video-data"} title={"Song author"}>
+                    <p className={"fix-ytm-video-data"} title={"Song author"}>
                         {video.snippet.channelTitle}
                     </p>
-                    <p id={"fix-ytm-video-tab-published"} className={"fix-ytm-video-data"} title={"Song release date"}>
+                    <p className={"fix-ytm-video-data"} title={"Song release date"}>
                         {formatDate(video.snippet.publishedAt, false)}
                     </p>
-                    <p id={"fix-ytm-video-tab-duration"} className={"fix-ytm-video-data"} title={"Song duration"}>
+                    <p className={"fix-ytm-video-data"} title={"Song duration"}>
                         {formatDuration(video.contentDetails.duration)}
                     </p>
                 </div>
             </header>
+            <section id={"fix-ytm-video-tab-statistics"} className={"fix-ytm-flex-wrapper"}>
+                <p title={"Song playbacks"} className={"fix-ytm-video-data"}>
+                    {video.statistics.viewCount || "0"} views
+                </p>
+                <p title={"Song likes"} className={"fix-ytm-video-data"}>
+                    {video.statistics.likeCount || "0"} likes
+                </p>
+                <p title={"Song comments count"} className={"fix-ytm-video-data"}>
+                    {video.statistics.commentCount || "0"} comments
+                </p>
+            </section>
+            <section id={"fix-ytm-video-comments"}>
+                <p className={"fix-ytm-video-data"}>Comments</p>
+                {handleComments(viewedVideoComments)}
+            </section>
         </> : <></>
-    }, [])
+    }, [viewedVideoId, viewedVideoComments])
+
+    const handleComments = useCallback((x: Comment[] | Error) => {
+        switch (true) {
+            case x instanceof Error:
+                console.error(`FIX.YTM React error: Comments: ${x}`);
+                return <><p>{x.message}</p></>;
+            case (x as Comment[]).length <= 0: return Number(fixytm.cache.videos.find(video => video.id === viewedVideoId)!.statistics.commentCount) > 0 ? <>
+                <button className={"fix-ytm-functionality-item"}
+                    onClick={async () => {
+                        const comments = await collectComments(viewedVideoId);
+                        setViewedVideoComments(comments)
+                    }}
+                    title={"View current video comments"}
+                    style={{margin: "auto", marginTop: "15px"}}>View comments</button></> : <>
+                    <p className={"fix-ytm-video-data"}>This video has no comments.</p>
+                </>;
+            case (x as Comment[]).length > 0: return <>
+                    {
+                        (x as Comment[]).map(comment => (
+                            <div className={"fix-ytm-comment"}>
+                                <section className={"fix-ytm-top-comment"}>
+                                    {RenderComment(comment)}
+                                </section>
+                                <section className={"fix-ytm-comment-replies"}>
+                                    {RenderReplies(comment)}
+                                </section>
+                            </div>
+                        ))
+                    }
+                </>;
+        }
+    }, [viewedVideoId, viewedVideoComments])
+
+    function RenderComment(comment: Comment): ReactElement {
+        const topSnippet = comment.snippet.topLevelComment.snippet;
+        return <>
+            <header className={"fix-ytm-comment-info"}>
+
+                <img src={topSnippet.authorProfileImageUrl} alt={"Comment author's avatar"} />
+                <div>
+                    <h3>{topSnippet.authorDisplayName}</h3>
+                    <p title={
+                        `Published at ${formatDate(topSnippet.publishedAt, true)} 
+                        \nUpdated at ${formatDate(topSnippet.updatedAt, true)}`
+                    }>{formatDate(topSnippet.publishedAt, false)}</p>
+                </div>
+            </header>
+            <p className={"fix-ytm-comment-text"} dangerouslySetInnerHTML={{__html: topSnippet.textDisplay}}></p>
+            <footer className={"fix-ytm-comment-stats"}>
+                {commentContentWarning(topSnippet.textDisplay) ? <span title={"This comment contains illegal embedded emojis"}>!</span> : null}
+                <p>{topSnippet.likeCount} likes</p>
+                <p>{comment.snippet.totalReplyCount} replies</p>
+            </footer>
+        </>
+    }
+    function RenderReplies(comment: Comment): ReactElement {
+        return <>
+            {
+                comment.replies?.comments.map(reply => (
+                    <>
+                        <div className={"fix-ytm-comment-reply-container"}>
+                            <div className={"fix-ytm-comment-reply"}>
+                                <header className={"fix-ytm-comment-info"}>
+                                    <img src={reply.snippet.authorProfileImageUrl} alt={"Comment author's avatar"} />
+                                    <div>
+                                        <h3>{reply.snippet.authorDisplayName}</h3>
+                                        <p title={
+                                            `Published at ${formatDate(reply.snippet.publishedAt, true)} 
+                                            \nUpdated at ${formatDate(reply.snippet.updatedAt, true)}`
+                                        }>{formatDate(reply.snippet.publishedAt, false)}</p>
+                                    </div>
+                                </header>
+                                <p className={"fix-ytm-comment-text"} dangerouslySetInnerHTML={{__html: reply.snippet.textDisplay}}></p>
+                                <footer className={"fix-ytm-comment-stats"}>
+                                    <p>{reply.snippet.likeCount} likes</p>
+                                </footer>
+                            </div>
+                        </div>
+                    </>
+                ))
+            }
+        </>
+    }
 
     return (
         <>

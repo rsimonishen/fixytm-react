@@ -15,7 +15,10 @@ declare global {
             };
             MAX_PLAYLIST_PAGE_ITEMS: number;
             MAX_VIDEOS_PAGE_ITEMS: number;
-            MAX_CYCLES_PER_FETCH: number;
+            MAX_COMMENTS_PAGE_ITEMS: number;
+            MAX_CYCLES_PER_FETCH_COMMENTS: number;
+            MAX_CYCLES_PER_FETCH_PLAYLIST: number;
+            MAX_CYCLES_PER_FETCH_VIDEO: number;
             MAX_CYCLES_PER_RENDER: number;
             cache: {
                 playlists: PlaylistCache[];
@@ -29,6 +32,7 @@ declare global {
                 USER_COUNTRY: string | undefined;
             };
             observer: MutationObserver | undefined;
+            observerConnected: boolean;
         }
     }
 }
@@ -47,7 +51,10 @@ window.fixytm = {
     },
     MAX_PLAYLIST_PAGE_ITEMS: 50,
     MAX_VIDEOS_PAGE_ITEMS: 50,
-    MAX_CYCLES_PER_FETCH: 10,
+    MAX_COMMENTS_PAGE_ITEMS: 100,
+    MAX_CYCLES_PER_FETCH_COMMENTS: 3,
+    MAX_CYCLES_PER_FETCH_PLAYLIST: 10,
+    MAX_CYCLES_PER_FETCH_VIDEO: 10,
     MAX_CYCLES_PER_RENDER: 50,
     cache: {
         playlists: [],
@@ -60,7 +67,8 @@ window.fixytm = {
     user: {
         USER_COUNTRY: undefined
     },
-    observer: undefined
+    observer: undefined,
+    observerConnected: false,
 }
 
 if (window.fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2") {(async () => {

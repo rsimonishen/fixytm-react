@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Overlay } from './Overlay'
 import fixytm from './cache-init'
@@ -21,9 +20,7 @@ const __root: HTMLDivElement = document.createElement('div')! as HTMLDivElement
 __root.id = 'fix-ytm-root-react'
 document.body.appendChild(__root)
 createRoot(__root).render(
-    <StrictMode>
-        <Overlay />
-    </StrictMode>
+    <Overlay />
 )
 
 console.log('FIX.YTM React: DOM loaded')

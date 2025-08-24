@@ -1,8 +1,9 @@
 import type { Video } from "./related-interfaces";
 import { PlaylistCache } from "./cache-classes";
-import { fetchPlaylist, fetchVideos } from "./network-scripts";
+import { fetchComments, fetchPlaylist, fetchVideos } from "./network-scripts";
 import fixytm from "./cache-init";
 import { cachePlaylist, matchPlaylistCache } from "./cache-scripts";
+import type { Comment } from "./related-interfaces";
 
 export function filterVideos(videos: Video[]): Video[] {
     if (!fixytm.user.USER_COUNTRY) throw new Error("FIX.YTM React error: user country not set");
@@ -49,6 +50,10 @@ export function formatDuration(duration: string): string {
     return matches.slice(1).map(item => item ? item.padStart(2, "0") : "00").join(":")
 }
 
+export function commentContentWarning(comment: string): boolean {
+    return /<a href="[\w-]+\/[\w-]+"><\/a>/.test(comment)
+}
+
 export async function collectPlaylist(id: string = fetchPlaylistId(), cacheInstantly: boolean): Promise<PlaylistCache> {
     if (matchPlaylistCache(id)) {
         console.log("FIX.YTM React: automatically pulling playlist from cache");
@@ -68,6 +73,10 @@ export async function collectPlaylist(id: string = fetchPlaylistId(), cacheInsta
 
 export async function collectVideo(id: string): Promise<Video> {
     return fixytm.cache.videos.find(video => video.id === id) || (await fetchVideos([id], false, true))[0];
+}
+
+export async function collectComments(videoId: string): Promise<Comment[] | Error> {
+    return fixytm.cache.videos.find(video => video.id === videoId)?.comments || (await fetchComments(videoId, true));
 }
 
 export function mapPlaylist(

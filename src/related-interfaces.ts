@@ -1,4 +1,18 @@
-export interface Video {
+export interface JsonResponse {
+    error?: {
+        code: number;
+        message: string;
+        errors: {
+            message: string;
+            domain: string;
+            reason: string;
+            location: string;
+            locationType: string;
+        }[]
+    }
+}
+
+export interface Video extends JsonResponse {
     [key: string]: unknown;
     id: string;
     statistics: {
@@ -29,12 +43,13 @@ export interface Video {
             blocked?: string[];
         }
     };
+    comments?: Comment[];
 }
 export interface Playlist {
     [key: string]: unknown;
     items: PlaylistItem[];
 }
-export interface PlaylistResponse extends Playlist {
+export interface PlaylistResponse extends Playlist, JsonResponse {
     [key: string]: unknown;
     pageInfo: {
         totalResults: number;
@@ -47,11 +62,75 @@ export interface PlaylistItem {
         videoId: string;
     }
 }
-export interface VideosResponse {
+export interface VideosResponse extends JsonResponse {
     [key: string]: unknown;
     items: Video[];
 }
-export interface IpinfoResponse {
+export interface CommentsResponse extends JsonResponse {
+    [key: string]: unknown;
+    items: Comment[];
+}
+export interface Comment {
+    kind: string;
+    etag: string;
+    id: string;
+    snippet: {
+        channelId: string;
+        videoId: string;
+        topLevelComment: {
+            kind: string;
+            etag: string;
+            id: string;
+            snippet: {
+                channelId: string;
+                videoId: string;
+                textOriginal: string;
+                textDisplay: string;
+                authorDisplayName: string;
+                authorProfileImageUrl: string;
+                authorChannelUrl: string;
+                authorChannelId: {
+                    value: string;
+                };
+                canRate: boolean;
+                viewerRating: string;
+                likeCount: number;
+                publishedAt: string;
+                updatedAt: string;
+            }
+        };
+        canReply: boolean;
+        totalReplyCount: number;
+        isPublic: boolean;
+    }
+    replies?: {
+        comments: Reply[];
+    }
+}
+export interface Reply {
+    kind: string;
+    etag: string;
+    id: string;
+    snippet: {
+        channelId: string;
+        videoId: string;
+        textOriginal: string;
+        textDisplay: string;
+        parentId: string;
+        authorDisplayName: string;
+        authorProfileImageUrl: string;
+        authorChannelUrl: string;
+        authorChannelId: {
+            value: string;
+        };
+        canRate: boolean;
+        viewerRating: string;
+        likeCount: number;
+        publishedAt: string;
+        updatedAt: string;
+    }
+}
+export interface IpinfoResponse extends JsonResponse {
     [key: string]: unknown;
     ip: string;
     hostname: string;

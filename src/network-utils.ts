@@ -10,29 +10,22 @@ export class RequestString {
         else if (this.content.includes("?")) this.content += `&${value}`;
         else this.content += `?${arg}`;
     }
-    getContent(): string {
-        return this.content;
-    }
+    get URL(): string { return this.content; }
 }
 
 export async function fetchJSON (req: RequestString, headers?: Record<string, string>): Promise<string> {
-    let output: string = "";
-    await new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
         const xhr: XMLHttpRequest = new XMLHttpRequest();
-        xhr.open("GET", req.getContent());
+        xhr.open("GET", req.URL);
         if (headers) for (const key in headers) xhr.setRequestHeader(key, headers[key]);
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                console.log(`FIX.YTM React: fetched json object successfully, status: 200; response: \n${xhr.responseText}`);
-                output = xhr.responseText;
-                resolve(0);
-            } else if (xhr.readyState === 4 && xhr.status !== 200) {
-                reject(new Error(`FIX.YTM React: failed to fetch json object, status: ${xhr.status}; response: \n${xhr.responseText}`))
-            } else {
-                console.log(`FIX.YTM React: fetching json object; ready state: ${xhr.readyState}`);
-            }
+        xhr.onload = () => {
+            console.log(`FIX.YTM React: ${req.URL} fetched: ${xhr.status} ${xhr.responseText.length} bytes`);
+            xhr.status === 200 ? resolve(xhr.responseText) : reject(xhr.statusText);
+        }
+        xhr.onerror = () => {
+            console.error(`FIX.YTM React error: ${req.URL} fetch failed: ${xhr.status} ${xhr.responseText}`);
+            reject(xhr.statusText);
         }
         xhr.send();
     })
-    return output;
 }
