@@ -57,7 +57,7 @@ export function commentContentWarning(comment: string): boolean {
 export async function collectPlaylist(id: string = fetchPlaylistId(), cacheInstantly: boolean): Promise<PlaylistCache> {
     if (matchPlaylistCache(id)) {
         console.log("FIX.YTM React: automatically pulling playlist from cache");
-        return matchPlaylistCache(id, true) as PlaylistCache;
+        return matchPlaylistCache(id) as PlaylistCache;
     }
     const playlistItemIds: string[] = await fetchPlaylist(id);
     const playlistVideos: Video[] = await fetchVideos(playlistItemIds);
@@ -68,15 +68,15 @@ export async function collectPlaylist(id: string = fetchPlaylistId(), cacheInsta
         keys: playlistKeys,
     }
     if (cacheInstantly) { cachePlaylist(id, cache); }
-    return matchPlaylistCache(id, true) as PlaylistCache;
+    return matchPlaylistCache(id) as PlaylistCache;
 }
 
 export async function collectVideo(id: string): Promise<Video> {
-    return fixytm.cache.videos.find(video => video.id === id) || (await fetchVideos([id], false, true))[0];
+    return fixytm.cache.videos.find((video: Video) => video.id === id) || (await fetchVideos([id], false, true))[0];
 }
 
 export async function collectComments(videoId: string): Promise<Comment[] | Error> {
-    return fixytm.cache.videos.find(video => video.id === videoId)?.comments || (await fetchComments(videoId, true));
+    return fixytm.cache.videos.find((video: Video) => video.id === videoId)?.comments || (await fetchComments(videoId, true));
 }
 
 export function mapPlaylist(

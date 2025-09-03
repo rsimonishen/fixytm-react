@@ -64,8 +64,8 @@ export function matchRadioStation(playlist?: PlaylistCache): void {
     const queueRenderer: HTMLElement = document.querySelector("div#contents.ytmusic-player-queue")!;
     const children = Array.from(queueRenderer.childNodes) as HTMLElement[];
     const cache = fixytm.cache.syncedRadio;
-    const isMatching: boolean = (cache.shelves.length > 0 && cache.shelves.every(item =>
-        children.includes(item)))
+    const isMatching: boolean = (cache.shelves.length > 0 && cache.shelves.every((shelf: HTMLElement) =>
+        children.includes(shelf)))
     const queue: HTMLElement[] = isMatching ? cache.shelves : Array.from(queueRenderer.childNodes) as HTMLElement[];
     const queueTitles: string[] = queue.map(el => el.querySelector("yt-formatted-string.song-title.ytmusic-player-queue-item")!.innerHTML);
     if (!playlist) {

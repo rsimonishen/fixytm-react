@@ -1,4 +1,5 @@
-import { type ReactElement, useCallback, useEffect, useState } from 'react'
+/* eslint-disable react-hooks/exhaustive-deps */
+import {type ReactElement, useEffect, useState} from 'react'
 import './Overlay.css'
 import {
     collectComments,
@@ -10,7 +11,9 @@ import {
 } from "./helper-scripts";
 import { matchRadioStation, sortPlaylist } from "./main-scripts";
 import fixytm from "./cache-init";
-import type {Comment} from "./related-interfaces";
+import type {Comment, Video} from "./related-interfaces";
+import type {PlaylistCache} from "./cache-classes";
+import {fetchComments, fetchReplies} from "./network-scripts.ts";
 
 export function Overlay(): ReactElement {
     const fixytmObserverTargets: Element[] = [
@@ -29,11 +32,13 @@ export function Overlay(): ReactElement {
     const [videoPanel, showVideoPanel] = useState<boolean>(false);
     const [viewedVideoId, setViewedVideoId] = useState<string>("");
     const [viewedVideoComments, setViewedVideoComments] = useState<Comment[] | Error>([]);
-    // const [viewedVideoCommentsDisabled, setViewedVideoCommentsDisabled] = useState<boolean>(false);
+    const [viewedCommentThread, setViewedCommentThread] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         setViewedVideoComments([]);
+        setViewedCommentThread(undefined);
     }, [viewedVideoId]);
+
 
     useEffect(() => {
         if (!fixytm.observerConnected) {
@@ -51,10 +56,10 @@ export function Overlay(): ReactElement {
         if (fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2"
             && !fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRED) authorise(true);
         else authorise(false)
-    })
+    });
 
-    const handleControls = useCallback((x: string) => {
-        switch (x) {
+    function Controls({mode}: {mode: string}) {
+        switch (mode) {
             case "/playlist":
                 return <>
                     <button
@@ -86,9 +91,9 @@ export function Overlay(): ReactElement {
                             true
                         )}>Sort by duration</button>
                 </>
-            case "/watch":
+            case "/watch": {
                 const playlist = fixytm.cache.playlists.find(
-                    playlist => (playlist.getCache("mapOfDOMRelevance") as boolean &&
+                    (playlist: PlaylistCache) => (playlist.getCache("mapOfDOMRelevance") as boolean &&
                         playlist.getCache("currentOrder")));
                 const viewVideoButton = <button
                     className={"fix-ytm-functionality-item"}
@@ -99,26 +104,47 @@ export function Overlay(): ReactElement {
                         showVideoPanel(true);
                     }}
                     title={"View current video statistics and data in a separate tab"}>View video</button>
-                return playlist ? <>
-                    <button
+
+                return <>
+                    { playlist ? <button
                         className={"fix-ytm-functionality-item"}
                         onClick={() => matchRadioStation(playlist)}
                         title={"Synchronise radio station with sorted playlist order"}>
-                        Sync station</button>
-                    {viewVideoButton}
-                </> : <>
+                        Sync station
+                    </button> : null }
                     {viewVideoButton}
                 </>
+            }
 
             default:
                 if (!document.querySelector("div#contents.ytmusic-playlist-shelf-renderer"))
-                    fixytm.cache.playlists.forEach(playlist => playlist.setCache("mapOfDOMRelevance", false))
+                    fixytm.cache.playlists.forEach((playlist: PlaylistCache) => playlist.setCache("mapOfDOMRelevance", false))
                 return <></>;
         }
-    }, [])
+    }
 
-    const handleVideoPanel = useCallback((x: string) => {
-        const video = fixytm.cache.videos.find(video => video.id === x);
+    function MainPanel ({authorised, mode}: {authorised: boolean, mode: string}) {
+        return <>
+            <button
+                className={"fix-ytm-overlay-tab-hide"}
+                onClick={() => {
+                    showOverlay(false);
+                    showVideoPanel(false)
+                }}><hr /></button>
+            <a style={{display: authorised ? "none" : "block"}} id={"fix-ytm-auth-button"} className={"fix-ytm-isolated-item"} title={"Authorization via OAuth2 unlocks more features of the app and helps fight API quota overloads"} href={"https://accounts.google.com/o/oauth2/v2/auth?client_id=76921199374-mfrm9nc1c8ceg2sitqdkjrvb4uh16qn4.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fmusic.youtube.com&response_type=token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.force-ssl&state=pass-through%20value%20Accept:%20application/json%20###"}>
+                Authorize via OAuth2
+            </a>
+            <div id={"fix-ytm-overlay-inner-wrapper"} className={"fix-ytm-flex-wrapper"}>
+                <Controls mode={mode} />
+            </div>
+            <p id={"fix-ytm-overlay-current-mode"} className={"fix-ytm-functionality-item"}>
+                {mode}
+            </p>
+        </>
+    }
+
+    function VideoPanel ({videoId}: {videoId: string}) {
+        const video = fixytm.cache.videos.find((video: Video) => video.id === videoId);
         return video ? <>
             <header id={"fix-ytm-video-tab-header"} className={"fix-ytm-flex-wrapper"} style={{marginTop: `32px`}}>
                 <img id={"fix-ytm-video-tab-thumbnail"} src={video.snippet.thumbnails.default.url} alt={"Video thumbnail"} style={{width: '25%'}}/>
@@ -150,17 +176,17 @@ export function Overlay(): ReactElement {
             </section>
             <section id={"fix-ytm-video-comments"}>
                 <p className={"fix-ytm-video-data"}>Comments</p>
-                {handleComments(viewedVideoComments)}
+                <Comments contents={viewedVideoComments} video={video} />
             </section>
-        </> : <></>
-    }, [viewedVideoId, viewedVideoComments])
+        </> : null;
+    }
 
-    const handleComments = useCallback((x: Comment[] | Error) => {
+    function Comments({contents, video}: {contents: Error | Comment[], video: Video}) {
         switch (true) {
-            case x instanceof Error:
-                console.error(`FIX.YTM React error: Comments: ${x}`);
-                return <><p>{x.message}</p></>;
-            case (x as Comment[]).length <= 0: return Number(fixytm.cache.videos.find(video => video.id === viewedVideoId)!.statistics.commentCount) > 0 ? <>
+            case contents instanceof Error:
+                console.error(`FIX.YTM React error: Comments: ${contents}`);
+                return <><p>{contents.message}</p></>;
+            case (contents as Comment[]).length <= 0: return Number(fixytm.cache.videos.find((video: Video) => video.id === viewedVideoId)!.statistics.commentCount) > 0 ? <>
                 <button className={"fix-ytm-functionality-item"}
                     onClick={async () => {
                         const comments = await collectComments(viewedVideoId);
@@ -170,24 +196,36 @@ export function Overlay(): ReactElement {
                     style={{margin: "auto", marginTop: "15px"}}>View comments</button></> : <>
                     <p className={"fix-ytm-video-data"}>This video has no comments.</p>
                 </>;
-            case (x as Comment[]).length > 0: return <>
+            case (contents as Comment[]).length > 0: return <>
                     {
-                        (x as Comment[]).map(comment => (
-                            <div className={"fix-ytm-comment"}>
-                                <section className={"fix-ytm-top-comment"}>
-                                    {RenderComment(comment)}
-                                </section>
-                                <section className={"fix-ytm-comment-replies"}>
-                                    {RenderReplies(comment)}
-                                </section>
-                            </div>
+                        (contents as Comment[]).map(comment => (
+                            <>
+                                <div className={"fix-ytm-comment"}>
+                                    <section className={"fix-ytm-top-comment"}>
+                                        <Comment comment={comment} />
+                                    </section>
+                                    { comment.snippet.totalReplyCount > 0 ? <section className={"fix-ytm-comment-replies"}>
+                                        <Replies comment={comment} />
+                                    </section> : null }
+                                </div>
+                            </>
                         ))
+                    }
+                    {
+                        video.commentNextPageToken ? <>
+                            <div className={"fix-ytm-view-thread"}>
+                                <button
+                                    onClick={async () => {
+                                        await fetchComments(video.id, true, video.commentNextPageToken);
+                                        setViewedVideoComments(video.comments!);
+                                    }}>View more comments</button></div>
+                        </> : null
                     }
                 </>;
         }
-    }, [viewedVideoId, viewedVideoComments])
+    }
 
-    function RenderComment(comment: Comment): ReactElement {
+    function Comment({ comment }: {comment: Comment}): ReactElement {
         const topSnippet = comment.snippet.topLevelComment.snippet;
         return <>
             <header className={"fix-ytm-comment-info"}>
@@ -209,12 +247,12 @@ export function Overlay(): ReactElement {
             </footer>
         </>
     }
-    function RenderReplies(comment: Comment): ReactElement {
+    function Replies({comment}: {comment: Comment}): ReactElement {
         return <>
             {
-                comment.replies?.comments.map(reply => (
+                viewedCommentThread === comment.id ? comment.replies!.comments.map(reply => (
                     <>
-                        <div className={"fix-ytm-comment-reply-container"}>
+                        <div className={"fix-ytm-comment-reply-container"} key={reply.id}>
                             <div className={"fix-ytm-comment-reply"}>
                                 <header className={"fix-ytm-comment-info"}>
                                     <img src={reply.snippet.authorProfileImageUrl} alt={"Comment author's avatar"} />
@@ -233,7 +271,14 @@ export function Overlay(): ReactElement {
                             </div>
                         </div>
                     </>
-                ))
+                )) : <>
+                    <div className={"fix-ytm-view-thread"}>
+                        <button
+                            onClick={async () => {
+                                if (!comment.replies) await fetchReplies(comment);
+                                setViewedCommentThread(comment.id)
+                            }}>View replies</button></div>
+                </>
             }
         </>
     }
@@ -247,20 +292,11 @@ export function Overlay(): ReactElement {
                     onClick={() => {showOverlay(true); setMode(window.location.pathname)}}
                     style={{display: overlay ? 'none' : 'flex'}}>Fix</button>
                 <div id={"fix-ytm-overlay-main"} className={"fix-ytm-flex-wrapper fix-ytm-overlay-tab"} style={{display: overlay ? 'flex' : 'none'}}>
-                    <button className={"fix-ytm-overlay-tab-hide"} onClick={() => {showOverlay(false); showVideoPanel(false)}}><hr /></button>
-                    <a style={{display: authorised ? "none" : "block"}} id={"fix-ytm-auth-button"} className={"fix-ytm-isolated-item"} title={"Authorization via OAuth2 unlocks more features of the app and helps fight API quota overloads"} href={"https://accounts.google.com/o/oauth2/v2/auth?client_id=76921199374-mfrm9nc1c8ceg2sitqdkjrvb4uh16qn4.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fmusic.youtube.com&response_type=token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.force-ssl&state=pass-through%20value%20Accept:%20application/json%20###"}>
-                        Authorize via OAuth2
-                    </a>
-                    <div id={"fix-ytm-overlay-inner-wrapper"} className={"fix-ytm-flex-wrapper"}>
-                        {handleControls(mode)}
-                    </div>
-                    <p id={"fix-ytm-overlay-current-mode"} className={"fix-ytm-functionality-item"}>
-                        {mode}
-                    </p>
+                    <MainPanel authorised={authorised} mode={mode} />
                 </div>
                 <div id={"fix-ytm-video-panel"} className={"fix-ytm-overlay-tab"} style={{display: videoPanel ? 'inline-block' : 'none'}}>
                     <button className={"fix-ytm-overlay-tab-hide"} onClick={() => showVideoPanel(false)}><hr /></button>
-                    {handleVideoPanel(viewedVideoId)}
+                    <VideoPanel videoId={viewedVideoId} />
                 </div>
             </div>
         </>

@@ -10,6 +10,7 @@ export interface JsonResponse {
             locationType: string;
         }[]
     }
+    nextPageToken?: string;
 }
 
 export interface Video extends JsonResponse {
@@ -44,6 +45,7 @@ export interface Video extends JsonResponse {
         }
     };
     comments?: Comment[];
+    commentNextPageToken?: string;
 }
 export interface Playlist {
     [key: string]: unknown;
@@ -69,6 +71,10 @@ export interface VideosResponse extends JsonResponse {
 export interface CommentsResponse extends JsonResponse {
     [key: string]: unknown;
     items: Comment[];
+}
+export interface RepliesResponse extends JsonResponse {
+    [key: string]: unknown;
+    items: Reply[];
 }
 export interface Comment {
     kind: string;

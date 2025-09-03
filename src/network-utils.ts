@@ -20,7 +20,7 @@ export async function fetchJSON (req: RequestString, headers?: Record<string, st
         if (headers) for (const key in headers) xhr.setRequestHeader(key, headers[key]);
         xhr.onload = () => {
             console.log(`FIX.YTM React: ${req.URL} fetched: ${xhr.status} ${xhr.responseText.length} bytes`);
-            xhr.status === 200 ? resolve(xhr.responseText) : reject(xhr.statusText);
+            if (xhr.status === 200) resolve(xhr.responseText); else reject(xhr.statusText);
         }
         xhr.onerror = () => {
             console.error(`FIX.YTM React error: ${req.URL} fetch failed: ${xhr.status} ${xhr.responseText}`);

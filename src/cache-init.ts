@@ -2,85 +2,53 @@ import { PlaylistCache } from "./cache-classes";
 import { sleep } from "./helper-scripts";
 import type { Video } from "./related-interfaces";
 
-declare global {
-    interface Window {
-        fixytm: {
-            apiKeys: {
-                GOOGLE_API_KEY: string;
-                GOOGLE_ACCESS_TOKEN: string | undefined;
-                GOOGLE_API_KEY_KIND: string;
-                GOOGLE_ACCESS_TOKEN_EXPIRES_IN: number | undefined;
-                GOOGLE_ACCESS_TOKEN_EXPIRED: boolean;
-                IPINFO_API_KEY: string;
-            };
-            MAX_PLAYLIST_PAGE_ITEMS: number;
-            MAX_VIDEOS_PAGE_ITEMS: number;
-            MAX_COMMENTS_PAGE_ITEMS: number;
-            MAX_CYCLES_PER_FETCH_COMMENTS: number;
-            MAX_CYCLES_PER_FETCH_PLAYLIST: number;
-            MAX_CYCLES_PER_FETCH_VIDEO: number;
-            MAX_CYCLES_PER_RENDER: number;
-            cache: {
-                playlists: PlaylistCache[];
-                videos: Video[];
-                syncedRadio: {
-                    shelves: HTMLElement[];
-                    map: Map<Video, HTMLElement> | undefined;
-                };
-            }
-            user: {
-                USER_COUNTRY: string | undefined;
-            };
-            observer: MutationObserver | undefined;
-            observerConnected: boolean;
-        }
-    }
-}
+const hash = Object.fromEntries(new URLSearchParams(window.location.hash.substring(1)))
 
-window.fixytm = {
+const fixytm = {
     apiKeys: {
-        GOOGLE_API_KEY: 'AIzaSyDbJWTlH_tBCaDqIGbfnxDNCN-XhnGltLA',
+        GOOGLE_API_KEY: 'AIzaSyDbJWTlH_tBCaDqIGbfnxDNCN-XhnGltLA' as string,
         GOOGLE_ACCESS_TOKEN: window.location.hash ?
-            Object.fromEntries(new URLSearchParams(window.location.hash.substring(1))).access_token! : undefined,
+            hash.access_token! : undefined as string | undefined,
         GOOGLE_API_KEY_KIND: window.location.hash ?
-            "OAuth2" : "API Key",
+            "OAuth2" : "API Key" as string,
         GOOGLE_ACCESS_TOKEN_EXPIRES_IN: window.location.hash ?
-            Number(Object.fromEntries(new URLSearchParams(window.location.hash.substring(1))).expires_in!) : undefined,
-        GOOGLE_ACCESS_TOKEN_EXPIRED: !window.location.hash,
-        IPINFO_API_KEY: '8faf88230ab83b'
+            Number(hash.expires_in!) : undefined as number | undefined,
+        GOOGLE_ACCESS_TOKEN_EXPIRED: !window.location.hash as boolean,
+        IPINFO_API_KEY: '8faf88230ab83b' as string,
     },
-    MAX_PLAYLIST_PAGE_ITEMS: 50,
-    MAX_VIDEOS_PAGE_ITEMS: 50,
-    MAX_COMMENTS_PAGE_ITEMS: 100,
-    MAX_CYCLES_PER_FETCH_COMMENTS: 3,
-    MAX_CYCLES_PER_FETCH_PLAYLIST: 10,
-    MAX_CYCLES_PER_FETCH_VIDEO: 10,
-    MAX_CYCLES_PER_RENDER: 50,
+    MAX_PLAYLIST_PAGE_ITEMS: 50 as number,
+    MAX_VIDEOS_PAGE_ITEMS: 50 as number,
+    MAX_COMMENTS_PAGE_ITEMS: 100 as number,
+    MAX_CYCLES_PER_FETCH_COMMENTS: 5 as number,
+    MAX_CYCLES_PER_FETCH_PLAYLIST: 10 as number,
+    MAX_CYCLES_PER_FETCH_VIDEO: 10 as number,
+    MAX_CYCLES_PER_RENDER: 50 as number,
     cache: {
-        playlists: [],
-        videos: [],
+        playlists: [] as PlaylistCache[],
+        videos: [] as Video[],
         syncedRadio: {
-            shelves: [],
-            map: undefined
-        }
+            shelves: [] as HTMLElement[],
+            map: undefined as Map<Video, HTMLElement> | undefined,
+        },
+        commentThreads: [] as Comment[],
     },
     user: {
-        USER_COUNTRY: undefined
+        USER_COUNTRY: undefined as string | undefined,
     },
-    observer: undefined,
-    observerConnected: false,
+    observer: undefined as MutationObserver | undefined,
+    observerConnected: false as boolean,
 }
 
-if (window.fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2") {(async () => {
+if (fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2") {(async () => {
     await new Promise((resolve) => {
-        sleep(window.fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRES_IN! * 1000).then(
+        sleep(fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRES_IN! * 1000).then(
             () => {
-                window.fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRED = true;
-                window.fixytm.apiKeys.GOOGLE_API_KEY_KIND = "API Key";
+                fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRED = true;
+                fixytm.apiKeys.GOOGLE_API_KEY_KIND = "API Key";
                 resolve(0)
             }
         )
     })
 })()}
 
-export default window.fixytm
+export default fixytm

@@ -1,6 +1,13 @@
-import type {Video, PlaylistResponse, VideosResponse, IpinfoResponse, CommentsResponse} from "./related-interfaces";
+import type {
+    Video,
+    PlaylistResponse,
+    VideosResponse,
+    IpinfoResponse,
+    CommentsResponse,
+    Reply, RepliesResponse
+} from "./related-interfaces";
 import { fetchJSON, RequestString } from "./network-utils";
-import { filterVideos } from "./helper-scripts";
+import {collectVideo, filterVideos} from "./helper-scripts";
 import fixytm from "./cache-init";
 import { getRelevantGapiKey } from "./cache-scripts";
 import { type Comment } from "./related-interfaces";
@@ -53,7 +60,7 @@ export async function fetchVideos (
     let undone: boolean = true;
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_VIDEO) {
         const idsPortion: string[] = [];
-        for (let i = 0; i < 50; i++) (ids[i + 50 * cycle]) && idsPortion.push(ids[i + 50 * cycle])
+        for (let i = 0; i < 50; i++) if(ids[i + 50 * cycle]) idsPortion.push(ids[i + 50 * cycle]);
         const req: RequestString = new RequestString(`https://www.googleapis.com/youtube/v3/videos?${args.join("&")}&id=${idsPortion.join("%2C")}`);
         let response: string;
         try { response = await fetchJSON(req) } catch (e) {console.error(`FIX.YTM React error: fetchVideos: ${e}`); return []}
@@ -68,27 +75,56 @@ export async function fetchVideos (
 
 export async function fetchComments(
     videoId: string,
-    cacheComments: boolean = false,
+    cacheComments: boolean,
+    nextPageToken?: string,
     [key, isOauthAccessToken] = getRelevantGapiKey()): Promise<Comment[] | Error> {
     const output: Comment[] = [];
     let cycle: number = 0;
+    const video = await collectVideo(videoId);
     const args: string[] = [
-        "part=snippet%2Creplies",
+        "part=snippet",
         `maxResults=${fixytm.MAX_COMMENTS_PAGE_ITEMS}`,
         "order=relevance",
-        `videoId=${videoId}`
+        `videoId=${videoId}`,
+        `${isOauthAccessToken ? "access_token" : "key"}=${key}`,
+        `${nextPageToken ? `pageToken=${nextPageToken}` : null}`,
     ]
-    if (isOauthAccessToken) args.push(`access_token=${key}`);
-    else args.push(`key=${key}`)
     let undone: boolean = true;
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
-        const req: RequestString = new RequestString(`https://www.googleapis.com/youtube/v3/commentThreads?${args.join("&")}`);
+        const req = new RequestString(`https://www.googleapis.com/youtube/v3/commentThreads?${args.join("&")}`);
         let response: string;
-        try { response = await fetchJSON(req) } catch (e) { return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.`) }
+        try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.`) }
         const obj = JSON.parse(response) as CommentsResponse;
         for (const comment of obj.items) output.push(comment)
-        if (obj.nextPageToken) { cycle++; args[5] = `pageToken=${obj.nextPageToken}` } else undone = false;
+        if (obj.nextPageToken) { cycle++; args[5] = `pageToken=${obj.nextPageToken}`; video.commentNextPageToken = obj.nextPageToken; }
+        else { undone = false; video.commentNextPageToken = undefined; }
+
     }
-    if (cacheComments) fixytm.cache.videos.find(video => video.id === videoId)!.comments = output;
+    if (cacheComments) video.comments = video.comments ? [...video.comments, ...output] : video.comments = [...output]
+    return output;
+}
+
+export async function fetchReplies(
+    thread: Comment,
+    [key, isOauthAccessToken] = getRelevantGapiKey()): Promise<Reply[] | Error> {
+    const output: Reply[] = [];
+    let cycle: number = 0;
+    const args: string[] = [
+        "part=snippet",
+        `maxResults=${fixytm.MAX_COMMENTS_PAGE_ITEMS}`,
+        `parentId=${thread.id}`,
+        `${isOauthAccessToken ? "access_token" : "key"}=${key}`
+    ]
+    let undone: boolean = true;
+    while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
+        const req = new RequestString(`https://www.googleapis.com/youtube/v3/comments?${args.join("&")}`);
+        let response: string;
+        try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.`) }
+        const obj = JSON.parse(response) as RepliesResponse;
+        for (const reply of obj.items) output.push(reply);
+        if (obj.nextPageToken) { cycle++; args[4] = `pageToken=${obj.nextPageToken}` } else undone = false;
+    }
+    thread.replies = { comments: output }
+
     return output;
 }

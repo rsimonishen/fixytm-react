@@ -2,11 +2,11 @@ import { PlaylistCache } from "./cache-classes";
 import fixytm from "./cache-init";
 import type { Video } from "./related-interfaces";
 
-export function matchPlaylistCache(id: string, notify: boolean = false): PlaylistCache | null {
+export function matchPlaylistCache(id: string): PlaylistCache | null {
     const playlists: PlaylistCache[] = fixytm.cache.playlists;
     for (const playlist of playlists) {
         if (playlist.getCache("id") === id) {
-            notify && console.log(`FIX.YTM React: found matching playlist in cache: ${playlist.getCache("id")}`);
+            console.log(`FIX.YTM React: found matching playlist in cache: ${playlist.getCache("id")}`);
             return playlist;
         }
     }
