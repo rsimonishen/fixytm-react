@@ -19,7 +19,7 @@ export async function fetchJSON (req: RequestString, headers?: Record<string, st
         xhr.open("GET", req.URL);
         if (headers) for (const key in headers) xhr.setRequestHeader(key, headers[key]);
         xhr.onload = () => {
-            console.log(`FIX.YTM React: ${req.URL} fetched: ${xhr.status} ${xhr.responseText.length} bytes`);
+            console.log(`FIX.YTM React: ${req.URL} fetched ${xhr.responseText.length} bytes; status: ${xhr.status}`);
             if (xhr.status === 200) resolve(xhr.responseText); else reject(xhr.statusText);
         }
         xhr.onerror = () => {
@@ -27,5 +27,22 @@ export async function fetchJSON (req: RequestString, headers?: Record<string, st
             reject(xhr.statusText);
         }
         xhr.send();
+    })
+}
+
+export async function insertJSON (req: RequestString, body: string, headers?: Record<string, string>): Promise<string> {
+    return await new Promise((resolve, reject) => {
+        const xhr: XMLHttpRequest = new XMLHttpRequest();
+        xhr.open("POST", req.URL);
+        if (headers) for (const key in headers) xhr.setRequestHeader(key, headers[key]);
+        xhr.onload = () => {
+            console.log(`FIX.YTM React: ${req.URL} inserted ${body.length} bytes; status: ${xhr.status}`);
+            if (xhr.status === 200) resolve(xhr.responseText); else reject(xhr.statusText);
+        }
+        xhr.onerror = () => {
+            console.error(`FIX.YTM React error: ${req.URL} insertion failed: ${xhr.status} ${xhr.responseText}`);
+            reject(xhr.statusText);
+        }
+        xhr.send(body);
     })
 }

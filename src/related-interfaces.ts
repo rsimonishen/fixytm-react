@@ -113,6 +113,18 @@ export interface Comment {
         comments: Reply[];
     }
 }
+export interface CommentEntity {
+    snippet: {
+        channelId: string;
+        videoId: string;
+        topLevelComment: {
+            snippet: {
+                textOriginal: string;
+            }
+        }
+    }
+}
+export interface CommentEntityResponse extends JsonResponse, Comment {}
 export interface Reply {
     kind: string;
     etag: string;
@@ -136,6 +148,13 @@ export interface Reply {
         updatedAt: string;
     }
 }
+export interface ReplyEntity {
+    snippet: {
+        textOriginal: string;
+        parentId: string;
+    }
+}
+export interface ReplyEntityResponse extends JsonResponse, Reply {}
 export interface IpinfoResponse extends JsonResponse {
     [key: string]: unknown;
     ip: string;

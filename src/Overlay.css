@@ -237,6 +237,54 @@ footer.fix-ytm-comment-stats > span {
     height: 16px;
     cursor: default;
 }
+div#fix-ytm-leave-comment {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    padding: 4px 10px;
+}
+div#fix-ytm-leave-comment > textarea {
+    width: 80%;
+    max-height: 65px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: #ffffff;
+    text-decoration: none;
+    text-align: left;
+    font-family: monospace;
+    font-size: 14px;
+    resize: none;
+}
+div#fix-ytm-leave-comment > p {
+    margin: 0;
+    width: 80%;
+    text-align: left;
+    color: #898989;
+    padding: 5px;
+}
+div#fix-ytm-leave-comment > textarea::placeholder {
+    color: #898989;
+}
+div#fix-ytm-leave-comment > button {
+    text-align: center;
+    vertical-align: middle;
+    border: none;
+    width: 20%;
+    padding: 5px;
+    background: none;
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 14px;
+    color: #ffffff;
+}
+div#fix-ytm-leave-comment > button:hover {
+    text-decoration: underline;
+    text-decoration-color: #ff0033;
+    color: #ffffff;
+}
 button.fix-ytm-functionality-item {
     width: 90px;
     height: 90px;

@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import {type ReactElement, useEffect, useState} from 'react'
+import { type ReactElement, useEffect, useState, useRef } from 'react'
 import './Overlay.css'
 import {
     collectComments,
@@ -13,7 +13,7 @@ import { matchRadioStation, sortPlaylist } from "./main-scripts";
 import fixytm from "./cache-init";
 import type {Comment, Video} from "./related-interfaces";
 import type {PlaylistCache} from "./cache-classes";
-import {fetchComments, fetchReplies} from "./network-scripts.ts";
+import {fetchComments, fetchReplies, insertCommentThread, insertReply} from "./network-scripts.ts";
 
 export function Overlay(): ReactElement {
     const fixytmObserverTargets: Element[] = [
@@ -33,6 +33,8 @@ export function Overlay(): ReactElement {
     const [viewedVideoId, setViewedVideoId] = useState<string>("");
     const [viewedVideoComments, setViewedVideoComments] = useState<Comment[] | Error>([]);
     const [viewedCommentThread, setViewedCommentThread] = useState<string | undefined>(undefined);
+    const [repliedComment, setRepliedComment] = useState<Comment | undefined>(undefined);
+    const commentTextArea = useRef<HTMLTextAreaElement>(null)
 
     useEffect(() => {
         setViewedVideoComments([]);
@@ -187,6 +189,34 @@ export function Overlay(): ReactElement {
                 console.error(`FIX.YTM React error: Comments: ${contents}`);
                 return <><p>{contents.message}</p></>;
             case (contents as Comment[]).length <= 0: return Number(fixytm.cache.videos.find((video: Video) => video.id === viewedVideoId)!.statistics.commentCount) > 0 ? <>
+                <div id={"fix-ytm-leave-comment"}>
+                    {repliedComment ? <>
+                        <p>
+                            Replying to: {repliedComment.snippet.topLevelComment.snippet.authorDisplayName}
+                        </p>
+                        <button
+                            onClick={() => setRepliedComment(undefined)}
+                            title={"Cancel reply"}>
+                            ╳
+                        </button>
+                    </> : null}
+                    <textarea
+                        ref={commentTextArea}
+                        autoCapitalize={"sentences"}
+                        autoComplete={"on"}
+                        autoCorrect={"on"}
+                        placeholder={"Leave your comment here"}
+                        wrap={"hard"}
+                        cols={8}>
+                    </textarea>
+                    <button onClick={async () => {
+                        if (repliedComment) await insertReply(repliedComment, commentTextArea.current!.value);
+                        else await insertCommentThread(video, commentTextArea.current!.value)
+                        setViewedVideoId(video.id);
+                    }}>
+                        Post
+                    </button>
+                </div>
                 <button className={"fix-ytm-functionality-item"}
                     onClick={async () => {
                         const comments = await collectComments(viewedVideoId);
@@ -241,7 +271,12 @@ export function Overlay(): ReactElement {
             </header>
             <p className={"fix-ytm-comment-text"} dangerouslySetInnerHTML={{__html: topSnippet.textDisplay}}></p>
             <footer className={"fix-ytm-comment-stats"}>
-                {commentContentWarning(topSnippet.textDisplay) ? <span title={"This comment contains illegal embedded emojis"}>!</span> : null}
+                <button
+                    className={"fix-ytm-leave-reply"}
+                    onClick={async () => {
+
+                    }}>Reply</button>
+                {commentContentWarning(topSnippet.textDisplay) ? <span title={"This comment contains illegal YT-embedded emojis"}>!</span> : null}
                 <p>{topSnippet.likeCount} likes</p>
                 <p>{comment.snippet.totalReplyCount} replies</p>
             </footer>

@@ -4,9 +4,9 @@ import type {
     VideosResponse,
     IpinfoResponse,
     CommentsResponse,
-    Reply, RepliesResponse
+    Reply, RepliesResponse, CommentEntity, CommentEntityResponse, ReplyEntity, ReplyEntityResponse
 } from "./related-interfaces";
-import { fetchJSON, RequestString } from "./network-utils";
+import {fetchJSON, insertJSON, RequestString} from "./network-utils";
 import {collectVideo, filterVideos} from "./helper-scripts";
 import fixytm from "./cache-init";
 import { getRelevantGapiKey } from "./cache-scripts";
@@ -93,7 +93,7 @@ export async function fetchComments(
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
         const req = new RequestString(`https://www.googleapis.com/youtube/v3/commentThreads?${args.join("&")}`);
         let response: string;
-        try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.`) }
+        try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason. Read console for more info`) }
         const obj = JSON.parse(response) as CommentsResponse;
         for (const comment of obj.items) output.push(comment)
         if (obj.nextPageToken) { cycle++; args[5] = `pageToken=${obj.nextPageToken}`; video.commentNextPageToken = obj.nextPageToken; }
@@ -119,7 +119,7 @@ export async function fetchReplies(
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
         const req = new RequestString(`https://www.googleapis.com/youtube/v3/comments?${args.join("&")}`);
         let response: string;
-        try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.`) }
+        try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: This comment thread is unavailable for an unknown reason. Read console for more info`) }
         const obj = JSON.parse(response) as RepliesResponse;
         for (const reply of obj.items) output.push(reply);
         if (obj.nextPageToken) { cycle++; args[4] = `pageToken=${obj.nextPageToken}` } else undone = false;
@@ -127,4 +127,60 @@ export async function fetchReplies(
     thread.replies = { comments: output }
 
     return output;
+}
+
+export async function insertCommentThread(
+    video: Video,
+    textOriginal: string,
+    cacheThread: boolean = false,
+    [key, isOauthAccessToken] = getRelevantGapiKey()): Promise<Comment | Error> {
+    const entry = JSON.stringify({
+        snippet: {
+            channelId: video.snippet.channelId,
+            videoId: video.id,
+            topLevelComment: {
+                snippet: {
+                    textOriginal: textOriginal,
+                }
+            }
+        }
+    } as CommentEntity) as string
+    const postReq = new RequestString(
+        `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&${isOauthAccessToken ? "access_token" : "key"}=${key}`);
+    let response: string;
+    try { response = await insertJSON(postReq, entry) as string; } catch (e) { console.error(e); return new Error(`FIX.YTM React error: Couldn't post this comment. Read console for more info`) }
+    const obj = JSON.parse(response) as CommentEntityResponse;
+    if (cacheThread) {
+        if (video.comments) {
+            video.comments.unshift(obj)
+        } else { video.comments = [obj] }
+    }
+    return obj;
+}
+
+export async function insertReply(
+    thread: Comment,
+    textOriginal: string,
+    cacheReply: boolean = false,
+    [key, isOauthAccessToken] = getRelevantGapiKey()) {
+    const entry = JSON.stringify({
+        snippet: {
+            textOriginal: textOriginal,
+            parentId: thread.id
+        }
+    } as ReplyEntity) as string
+    const postReq = new RequestString(
+        `https://www.googleapis.com/youtube/v3/comments?part=snippet&${isOauthAccessToken ? "access_token" : "key"}=${key}`)
+    let response: string;
+    try { response = await insertJSON(postReq, entry) as string; } catch (e) { console.error(e); return new Error(`FIX.YTM React error: Couldn't post this comment. Read console for more info`) }
+    const obj = JSON.parse(response) as ReplyEntityResponse;
+    if (cacheReply) {
+        if (thread.replies) {
+            thread.replies.comments.unshift(obj)
+        } else {
+            thread.replies = {
+                comments: [obj]
+            }
+        }
+    }
 }
