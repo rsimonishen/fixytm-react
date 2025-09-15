@@ -45,6 +45,7 @@ export interface Video extends JsonResponse {
         }
     };
     comments?: Comment[];
+    commentsOpen?: string;
     commentNextPageToken?: string;
 }
 export interface Playlist {

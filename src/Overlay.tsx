@@ -13,7 +13,7 @@ import { matchRadioStation, sortPlaylist } from "./main-scripts";
 import fixytm from "./cache-init";
 import type {Comment, Video} from "./related-interfaces";
 import type {PlaylistCache} from "./cache-classes";
-import {fetchComments, fetchReplies, insertCommentThread, insertReply} from "./network-scripts.ts";
+import {fetchComments, fetchReplies, insertCommentThread, insertReply} from "./network-scripts";
 
 export function Overlay(): ReactElement {
     const fixytmObserverTargets: Element[] = [
@@ -35,6 +35,7 @@ export function Overlay(): ReactElement {
     const [viewedCommentThread, setViewedCommentThread] = useState<string | undefined>(undefined);
     const [repliedComment, setRepliedComment] = useState<Comment | undefined>(undefined);
     const commentTextArea = useRef<HTMLTextAreaElement>(null)
+
 
     useEffect(() => {
         setViewedVideoComments([]);
@@ -97,15 +98,6 @@ export function Overlay(): ReactElement {
                 const playlist = fixytm.cache.playlists.find(
                     (playlist: PlaylistCache) => (playlist.getCache("mapOfDOMRelevance") as boolean &&
                         playlist.getCache("currentOrder")));
-                const viewVideoButton = <button
-                    className={"fix-ytm-functionality-item"}
-                    onClick={async () => {
-                        const id: string = fetchVideoId();
-                        await collectVideo(id);
-                        setViewedVideoId(id);
-                        showVideoPanel(true);
-                    }}
-                    title={"View current video statistics and data in a separate tab"}>View video</button>
 
                 return <>
                     { playlist ? <button
@@ -114,7 +106,15 @@ export function Overlay(): ReactElement {
                         title={"Synchronise radio station with sorted playlist order"}>
                         Sync station
                     </button> : null }
-                    {viewVideoButton}
+                    <button
+                        className={"fix-ytm-functionality-item"}
+                        onClick={async () => {
+                            const id: string = fetchVideoId();
+                            await collectVideo(id);
+                            setViewedVideoId(id);
+                            showVideoPanel(true);
+                        }}
+                        title={"View current video statistics and data in a separate tab"}>View video</button>
                 </>
             }
 
@@ -153,7 +153,7 @@ export function Overlay(): ReactElement {
                 <div style={{width: `70%`}}>
                     <p className={"fix-ytm-video-data"} title={"Song name"}>
                         {video.snippet.title}
-                    </p>
+                    </p>`
                     <p className={"fix-ytm-video-data"} title={"Song author"}>
                         {video.snippet.channelTitle}
                     </p>
@@ -187,71 +187,56 @@ export function Overlay(): ReactElement {
         switch (true) {
             case contents instanceof Error:
                 console.error(`FIX.YTM React error: Comments: ${contents}`);
-                return <><p>{contents.message}</p></>;
-            case (contents as Comment[]).length <= 0: return Number(fixytm.cache.videos.find((video: Video) => video.id === viewedVideoId)!.statistics.commentCount) > 0 ? <>
-                <div id={"fix-ytm-leave-comment"}>
-                    {repliedComment ? <>
-                        <p>
-                            Replying to: {repliedComment.snippet.topLevelComment.snippet.authorDisplayName}
-                        </p>
-                        <button
-                            onClick={() => setRepliedComment(undefined)}
-                            title={"Cancel reply"}>
-                            ╳
-                        </button>
-                    </> : null}
-                    <textarea
-                        ref={commentTextArea}
-                        autoCapitalize={"sentences"}
-                        autoComplete={"on"}
-                        autoCorrect={"on"}
-                        placeholder={"Leave your comment here"}
-                        wrap={"hard"}
-                        cols={8}>
-                    </textarea>
-                    <button onClick={async () => {
-                        if (repliedComment) await insertReply(repliedComment, commentTextArea.current!.value);
-                        else await insertCommentThread(video, commentTextArea.current!.value)
-                        setViewedVideoId(video.id);
-                    }}>
-                        Post
-                    </button>
-                </div>
-                <button className={"fix-ytm-functionality-item"}
+                return <p>{contents.message}</p>;
+            case (contents as Comment[]).length <= 0: return Number(video.statistics.commentCount) > 0 ? <>
+                <button
+                    className={"fix-ytm-functionality-item"}
                     onClick={async () => {
                         const comments = await collectComments(viewedVideoId);
                         setViewedVideoComments(comments)
                     }}
                     title={"View current video comments"}
                     style={{margin: "auto", marginTop: "15px"}}>View comments</button></> : <>
-                    <p className={"fix-ytm-video-data"}>This video has no comments.</p>
-                </>;
+                {video.commentsOpen === "open" ? <UserCommentField video={video} repliedComment={repliedComment} /> :
+                    video.commentsOpen === "closed" ? <p>
+                        FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.
+                    </p> : null}
+                <button
+                    className={"fix-ytm-functionality-item"}
+                    onClick={async () => {
+                        const comments = await collectComments(viewedVideoId);
+                        setViewedVideoComments(comments)
+                    }}
+                    title={"See if you can leave a comment"}
+                    style={{margin: "auto", marginTop: "15px", display: video.commentsOpen ? "none" : "flex"}}>Leave a comment</button>
+                </>
             case (contents as Comment[]).length > 0: return <>
-                    {
-                        (contents as Comment[]).map(comment => (
-                            <>
-                                <div className={"fix-ytm-comment"}>
-                                    <section className={"fix-ytm-top-comment"}>
-                                        <Comment comment={comment} />
-                                    </section>
-                                    { comment.snippet.totalReplyCount > 0 ? <section className={"fix-ytm-comment-replies"}>
-                                        <Replies comment={comment} />
-                                    </section> : null }
-                                </div>
-                            </>
-                        ))
-                    }
-                    {
-                        video.commentNextPageToken ? <>
-                            <div className={"fix-ytm-view-thread"}>
-                                <button
-                                    onClick={async () => {
-                                        await fetchComments(video.id, true, video.commentNextPageToken);
-                                        setViewedVideoComments(video.comments!);
-                                    }}>View more comments</button></div>
-                        </> : null
-                    }
-                </>;
+                <UserCommentField video={video} repliedComment={repliedComment} />
+                {
+                    (contents as Comment[]).map(comment => (
+                        <>
+                            <div className={"fix-ytm-comment"}>
+                                <section className={"fix-ytm-top-comment"}>
+                                    <Comment comment={comment} />
+                                </section>
+                                { comment.snippet.totalReplyCount > 0 ? <section className={"fix-ytm-comment-replies"}>
+                                    <Replies comment={comment} />
+                                </section> : null }
+                            </div>
+                        </>
+                    ))
+                }
+                {
+                    video.commentNextPageToken ? <>
+                        <div className={"fix-ytm-view-thread"}>
+                            <button
+                                onClick={async () => {
+                                    await fetchComments(video.id, true, video.commentNextPageToken);
+                                    setViewedVideoComments(video.comments!);
+                                }}>View more comments</button></div>
+                    </> : null
+                }
+            </>;
         }
     }
 
@@ -274,7 +259,7 @@ export function Overlay(): ReactElement {
                 <button
                     className={"fix-ytm-leave-reply"}
                     onClick={async () => {
-
+                        setRepliedComment(comment)
                     }}>Reply</button>
                 {commentContentWarning(topSnippet.textDisplay) ? <span title={"This comment contains illegal YT-embedded emojis"}>!</span> : null}
                 <p>{topSnippet.likeCount} likes</p>
@@ -317,23 +302,55 @@ export function Overlay(): ReactElement {
             }
         </>
     }
+    function UserCommentField({video, repliedComment}: {video: Video, repliedComment: Comment | undefined}): ReactElement {
+        return <div id={"fix-ytm-leave-comment"}>
+                {repliedComment ? <>
+                    <p>
+                        Replying to: {repliedComment.snippet.topLevelComment.snippet.authorDisplayName}
+                    </p>
+                    <button
+                        onClick={() => setRepliedComment(undefined)}
+                        title={"Cancel reply"}>
+                        ╳
+                    </button>
+                </> : null}
+                <textarea
+                    ref={commentTextArea}
+                    autoCapitalize={"sentences"}
+                    autoComplete={"on"}
+                    autoCorrect={"on"}
+                    placeholder={"Leave your comment here"}
+                    wrap={"hard"}
+                    cols={8}>
+                    </textarea>
+                <button onClick={async () => {
+                    const final = commentTextArea.current!.value.trim();
+                    if (/\S/.test(final)) {
+                        if (repliedComment) await insertReply(repliedComment, final);
+                        else await insertCommentThread(video, final);
+                    }
+                    commentTextArea.current!.value = "";
+                    setViewedVideoId(video.id);
+                }}>
+                    Post
+                </button>
+            </div>
+    }
 
     return (
-        <>
-            <div id={"fix-ytm-overlay-menu"}>
-                <button
-                    id={"fix-ytm-overlay-trigger"}
-                    className={"fix-ytm-functionality-item"}
-                    onClick={() => {showOverlay(true); setMode(window.location.pathname)}}
-                    style={{display: overlay ? 'none' : 'flex'}}>Fix</button>
-                <div id={"fix-ytm-overlay-main"} className={"fix-ytm-flex-wrapper fix-ytm-overlay-tab"} style={{display: overlay ? 'flex' : 'none'}}>
-                    <MainPanel authorised={authorised} mode={mode} />
-                </div>
-                <div id={"fix-ytm-video-panel"} className={"fix-ytm-overlay-tab"} style={{display: videoPanel ? 'inline-block' : 'none'}}>
-                    <button className={"fix-ytm-overlay-tab-hide"} onClick={() => showVideoPanel(false)}><hr /></button>
-                    <VideoPanel videoId={viewedVideoId} />
-                </div>
+        <div id={"fix-ytm-overlay-menu"}>
+            <button
+                id={"fix-ytm-overlay-trigger"}
+                className={"fix-ytm-functionality-item"}
+                onClick={() => {showOverlay(true); setMode(window.location.pathname)}}
+                style={{display: overlay ? 'none' : 'flex'}}>Fix</button>
+            <div id={"fix-ytm-overlay-main"} className={"fix-ytm-flex-wrapper fix-ytm-overlay-tab"} style={{display: overlay ? 'flex' : 'none'}}>
+                <MainPanel authorised={authorised} mode={mode} />
             </div>
-        </>
+            <div id={"fix-ytm-video-panel"} className={"fix-ytm-overlay-tab"} style={{display: videoPanel ? 'inline-block' : 'none'}}>
+                <button className={"fix-ytm-overlay-tab-hide"} onClick={() => showVideoPanel(false)}><hr /></button>
+                <VideoPanel videoId={viewedVideoId} />
+            </div>
+        </div>
     )
 }

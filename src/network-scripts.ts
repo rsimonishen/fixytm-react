@@ -93,14 +93,17 @@ export async function fetchComments(
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
         const req = new RequestString(`https://www.googleapis.com/youtube/v3/commentThreads?${args.join("&")}`);
         let response: string;
-        try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason. Read console for more info`) }
+        try { response = await fetchJSON(req) } catch (e) { console.error(e); video.commentsOpen="closed"; return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason. Read console for more info`) }
         const obj = JSON.parse(response) as CommentsResponse;
         for (const comment of obj.items) output.push(comment)
         if (obj.nextPageToken) { cycle++; args[5] = `pageToken=${obj.nextPageToken}`; video.commentNextPageToken = obj.nextPageToken; }
         else { undone = false; video.commentNextPageToken = undefined; }
 
     }
-    if (cacheComments) video.comments = video.comments ? [...video.comments, ...output] : video.comments = [...output]
+    if (cacheComments) {
+        video.comments = video.comments ? [...video.comments, ...output] : video.comments = [...output];
+        video.commentsOpen = "open";
+    }
     return output;
 }
 
