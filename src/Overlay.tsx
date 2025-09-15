@@ -323,7 +323,10 @@ export function Overlay(): ReactElement {
                     wrap={"hard"}
                     cols={8}>
                     </textarea>
-                <button onClick={async () => {
+                <button
+                    disabled={fixytm.apiKeys.GOOGLE_API_KEY_KIND !== "OAuth2"}
+                    title={fixytm.apiKeys.GOOGLE_API_KEY_KIND !== "OAuth2" ? "You need to authorize via OAuth2 to leave comments" : undefined}
+                    onClick={async () => {
                     const final = commentTextArea.current!.value.trim();
                     if (/\S/.test(final)) {
                         if (repliedComment) await insertReply(repliedComment, final);

@@ -291,6 +291,19 @@ div#fix-ytm-leave-comment > button {
     font-size: 14px;
     color: #ffffff;
 }
+div#fix-ytm-leave-comment > button:disabled {
+    color: #696969;
+    background: none;
+    border: none;
+    text-decoration: none;
+    cursor: not-allowed;
+}
+div#fix-ytm-leave-comment > button:disabled:hover {
+    color: #696969 !important;
+    text-decoration: line-through #ff0033 dotted !important;
+    background: none;
+    border: none;
+}
 div#fix-ytm-leave-comment > button:hover {
     text-decoration: underline;
     text-decoration-color: #ff0033;
