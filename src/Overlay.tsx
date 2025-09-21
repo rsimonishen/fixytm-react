@@ -15,17 +15,23 @@ import type {Comment, Video} from "./related-interfaces";
 import type {PlaylistCache} from "./cache-classes";
 import {fetchComments, fetchReplies, insertCommentThread, insertReply} from "./network-scripts";
 
+// The overlay renderer
 export function Overlay(): ReactElement {
+    // FIX.YTM attaches its observer to the targets listed here for automatic rendering when DOM changes
     const fixytmObserverTargets: Element[] = [
         document.querySelector('div#contents.ytmusic-section-list-renderer')!,
         document.querySelector('ytmusic-player-bar')!,
     ]
 
+    // Automatic re-rendering call upon mutation
     const fixytmObserver: MutationObserver = fixytm.observer || new MutationObserver(() => {
         setMode(window.location.pathname);
         console.log("FIX.YTM React mutation observer: target DOM has changed")})
+
+    // Caching the observer so that this function doesn't create new ones each rerender
     fixytm.observer = fixytmObserver;
 
+    // State control
     const [overlay, showOverlay] = useState<boolean>(false);
     const [mode, setMode] = useState<string>("/");
     const [authorised, authorise] = useState<boolean>(false);
@@ -36,13 +42,16 @@ export function Overlay(): ReactElement {
     const [repliedComment, setRepliedComment] = useState<Comment | undefined>(undefined);
     const commentTextArea = useRef<HTMLTextAreaElement>(null)
 
-
+    // Comment section reset upon change in the video
     useEffect(() => {
         setViewedVideoComments([]);
         setViewedCommentThread(undefined);
     }, [viewedVideoId]);
 
-
+    // FIX.YTM Mutation observer may not connect to all nodes that require observation
+    // within the first attempt, so this effect stands for retry for each of the targets,
+    // and also prevents the observer from connecting to one target multiple times,
+    // which causes massive throttling and waste of resource
     useEffect(() => {
         if (!fixytm.observerConnected) {
             try {
@@ -61,6 +70,8 @@ export function Overlay(): ReactElement {
         else authorise(false)
     });
 
+    // Render controls for the primary control panel accordingly
+    // to the section of the website the user is currently in
     function Controls({mode}: {mode: string}) {
         switch (mode) {
             case "/playlist":
@@ -125,6 +136,7 @@ export function Overlay(): ReactElement {
         }
     }
 
+    // Render the primary control panel
     function MainPanel ({authorised, mode}: {authorised: boolean, mode: string}) {
         return <>
             <button
@@ -145,6 +157,7 @@ export function Overlay(): ReactElement {
         </>
     }
 
+    // Render the video interaction & info panel
     function VideoPanel ({videoId}: {videoId: string}) {
         const video = fixytm.cache.videos.find((video: Video) => video.id === videoId);
         return video ? <>
@@ -183,6 +196,7 @@ export function Overlay(): ReactElement {
         </> : null;
     }
 
+    // Render comment section if there are comments and they're present in cache
     function Comments({contents, video}: {contents: Error | Comment[], video: Video}) {
         switch (true) {
             case contents instanceof Error:
@@ -240,6 +254,7 @@ export function Overlay(): ReactElement {
         }
     }
 
+    // Comment renderer
     function Comment({ comment }: {comment: Comment}): ReactElement {
         const topSnippet = comment.snippet.topLevelComment.snippet;
         return <>
@@ -267,6 +282,8 @@ export function Overlay(): ReactElement {
             </footer>
         </>
     }
+
+    // Comment reply thread renderer
     function Replies({comment}: {comment: Comment}): ReactElement {
         return <>
             {
@@ -302,6 +319,8 @@ export function Overlay(): ReactElement {
             }
         </>
     }
+
+    // Renderer for the textarea for user comment
     function UserCommentField({video, repliedComment}: {video: Video, repliedComment: Comment | undefined}): ReactElement {
         return <div id={"fix-ytm-leave-comment"}>
                 {repliedComment ? <>
@@ -329,7 +348,9 @@ export function Overlay(): ReactElement {
                     onClick={async () => {
                     const final = commentTextArea.current!.value.trim();
                     if (/\S/.test(final)) {
-                        if (repliedComment) await insertReply(repliedComment, final);
+                        if (repliedComment) {
+                            await insertReply(repliedComment, final);
+                        }
                         else await insertCommentThread(video, final);
                     }
                     commentTextArea.current!.value = "";
@@ -340,6 +361,7 @@ export function Overlay(): ReactElement {
             </div>
     }
 
+    // Final overlay menu
     return (
         <div id={"fix-ytm-overlay-menu"}>
             <button

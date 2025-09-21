@@ -2,6 +2,7 @@ import { PlaylistCache } from "./cache-classes";
 import fixytm from "./cache-init";
 import type { Video } from "./related-interfaces";
 
+// Find a playlist in cache by ID
 export function matchPlaylistCache(id: string): PlaylistCache | null {
     const playlists: PlaylistCache[] = fixytm.cache.playlists;
     for (const playlist of playlists) {
@@ -14,6 +15,7 @@ export function matchPlaylistCache(id: string): PlaylistCache | null {
     return null;
 }
 
+// Add a playlist to cache
 export function cachePlaylist(id: string, entry: PlaylistCache | {
     [key: string]: unknown;
     itemIds?: string[];
@@ -30,6 +32,7 @@ export function cachePlaylist(id: string, entry: PlaylistCache | {
     fixytm.cache.playlists.push(new PlaylistCache(entry));
 }
 
+// Yield a relevant API key for the moment
 export function getRelevantGapiKey(): [string, boolean] {
     if (fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2") return [fixytm.apiKeys.GOOGLE_ACCESS_TOKEN!, true]
     return [fixytm.apiKeys.GOOGLE_API_KEY, false]

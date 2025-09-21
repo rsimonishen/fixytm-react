@@ -2,16 +2,16 @@ import type {
     Video,
     PlaylistResponse,
     VideosResponse,
-    IpinfoResponse,
     CommentsResponse,
-    Reply, RepliesResponse, CommentEntity, CommentEntityResponse, ReplyEntity, ReplyEntityResponse
+    Reply, RepliesResponse, CommentEntity, CommentEntityResponse, ReplyEntity, ReplyEntityResponse, IpinfoResponse,
 } from "./related-interfaces";
-import {fetchJSON, insertJSON, RequestString} from "./network-utils";
-import {collectVideo, filterVideos} from "./helper-scripts";
+import { fetchJSON, insertJSON, RequestString } from "./network-utils";
+import { collectVideo, filterVideos } from "./helper-scripts";
 import fixytm from "./cache-init";
 import { getRelevantGapiKey } from "./cache-scripts";
 import { type Comment } from "./related-interfaces";
 
+// Network function for user country recognition; is required for content filtering features
 export async function fetchUserCountry (): Promise<string> {
     const req: RequestString = new RequestString("https://ipinfo.io/json");
     req.appendArg(`token=${fixytm.apiKeys.IPINFO_API_KEY}`);
@@ -20,6 +20,7 @@ export async function fetchUserCountry (): Promise<string> {
     return object.country;
 }
 
+// Network function for fetching a playlist by its ID
 export async function fetchPlaylist (id: string, [key, isOauthAccessToken] = getRelevantGapiKey()): Promise<string[]> {
     const output: string[] = [];
     let cycle: number = 0;
@@ -44,6 +45,7 @@ export async function fetchPlaylist (id: string, [key, isOauthAccessToken] = get
     return output;
 }
 
+// Network function by fetching a collection of videos by their IDs
 export async function fetchVideos (
     ids: string[], filter: boolean = true,
     cacheVideos: boolean = false,
@@ -73,6 +75,7 @@ export async function fetchVideos (
     return output;
 }
 
+// Network function for fetching an array of comments by video ID
 export async function fetchComments(
     videoId: string,
     cacheComments: boolean,
@@ -107,6 +110,7 @@ export async function fetchComments(
     return output;
 }
 
+// Network function for fetching comment replies by comment ID
 export async function fetchReplies(
     thread: Comment,
     [key, isOauthAccessToken] = getRelevantGapiKey()): Promise<Reply[] | Error> {
@@ -132,6 +136,7 @@ export async function fetchReplies(
     return output;
 }
 
+// Network function for posting comment threads under videos
 export async function insertCommentThread(
     video: Video,
     textOriginal: string,
@@ -161,6 +166,7 @@ export async function insertCommentThread(
     return obj;
 }
 
+// Network function for posting comment replies under comments
 export async function insertReply(
     thread: Comment,
     textOriginal: string,

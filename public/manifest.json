@@ -2,7 +2,7 @@
   "name": "FIX.YTM-React",
   "manifest_version": 3,
   "version": "1.0.7",
-  "description": "Fix broken features of YouTube Music",
+  "description": "Enhance your experience of using YouTube Music by fixing many broken functions and adding new UX features",
   "content_scripts": [{
     "matches": ["https://music.youtube.com/*"],
     "css": ["fixytm-react.css"],

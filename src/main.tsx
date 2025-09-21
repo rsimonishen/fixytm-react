@@ -8,17 +8,18 @@ console.log('FIX.YTM React is loading')
 
 console.log('FIX.YTM React says Hello World!')
 console.log("FIX.YTM React: Welcome to the ultimate YT Music scraper!")
-console.log(`FIX.YTM React: Current YT Data API v3 key: ${getRelevantGapiKey()[0]}, authorized: ${getRelevantGapiKey()[1]}`)
-console.log(`FIX.YTM React: Current ipinfo API key: ${fixytm.apiKeys.IPINFO_API_KEY}`);
+console.log(`FIX.YTM React: Current YT Data API v3 key: ${getRelevantGapiKey()[0]}, authorized: ${getRelevantGapiKey()[1]}`);
 
-(async () => {
-    fixytm.user.USER_COUNTRY = await fetchUserCountry()
-    console.log(`FIX.YTM React: user country - ${fixytm.user.USER_COUNTRY}`)
+(async () => { // User region recognition
+    if (fixytm.apiKeys.GOOGLE_ACCESS_TOKEN) fixytm.user.USER_COUNTRY = await fetchUserCountry()
+    console.log(`FIX.YTM React: user channel country - ${fixytm.user.USER_COUNTRY}`)
 })()
 
 const __root: HTMLDivElement = document.createElement('div')! as HTMLDivElement
 __root.id = 'fix-ytm-root-react'
 document.body.appendChild(__root)
+
+// Entry point
 createRoot(__root).render(
     <Overlay />
 )

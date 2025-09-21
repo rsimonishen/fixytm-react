@@ -1,6 +1,6 @@
 import type { Video } from "./related-interfaces";
 
-export class PlaylistCache {
+export class PlaylistCache { // Dedicated class to store info and contents of cached playlists
     [key: string]: unknown;
     private static readonly _requiredKeys = [
         "id", "itemIds", "mapOfDOM",

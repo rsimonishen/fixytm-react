@@ -1,3 +1,4 @@
+// Chassis for all subsequent received JSON network responses
 export interface JsonResponse {
     error?: {
         code: number;
@@ -13,8 +14,11 @@ export interface JsonResponse {
     nextPageToken?: string;
 }
 
-export interface Video extends JsonResponse {
+// Represents a video object (used both in cache and in manipulations)
+export interface Video {
     [key: string]: unknown;
+    kind: string;
+    etag: string;
     id: string;
     statistics: {
         viewCount: string;
@@ -48,35 +52,51 @@ export interface Video extends JsonResponse {
     commentsOpen?: string;
     commentNextPageToken?: string;
 }
+
+// Represents chassis for Playlist JSON objects. All data contained in received Playlist JSON objects
+// is primarily useless except for the items list
 export interface Playlist {
     [key: string]: unknown;
     items: PlaylistItem[];
 }
+
+// Chassis for playlistItems API GET request response content
 export interface PlaylistResponse extends Playlist, JsonResponse {
     [key: string]: unknown;
     pageInfo: {
         totalResults: number;
     }
-    nextPageToken?: string;
 }
+
+// Is a raw approximation for a Video, and is only used in playlists, because playlist requests
+// only provide the very essential info about their items, not enough to form a Video object
 export interface PlaylistItem {
     [key: string]: unknown;
     contentDetails: {
         videoId: string;
     }
 }
+
+// Chassis for videos API GET request response content
 export interface VideosResponse extends JsonResponse {
     [key: string]: unknown;
     items: Video[];
 }
+
+// Chassis for commentThreads API GET request by video ID response content
 export interface CommentsResponse extends JsonResponse {
     [key: string]: unknown;
     items: Comment[];
 }
+
+// Chassis for comments API GET request by comment ID response content
 export interface RepliesResponse extends JsonResponse {
     [key: string]: unknown;
     items: Reply[];
 }
+
+// Represents a Comment object with all its descending properties and is used
+// both in cache and in functions
 export interface Comment {
     kind: string;
     etag: string;
@@ -114,6 +134,8 @@ export interface Comment {
         comments: Reply[];
     }
 }
+
+// Chassis for commentThreads API POST requests
 export interface CommentEntity {
     snippet: {
         channelId: string;
@@ -125,7 +147,11 @@ export interface CommentEntity {
         }
     }
 }
+
+// Chassis for commentThreads API POST request responses
 export interface CommentEntityResponse extends JsonResponse, Comment {}
+
+// Reply object obtained via comments API GET request by a comment thread ID
 export interface Reply {
     kind: string;
     etag: string;
@@ -149,13 +175,19 @@ export interface Reply {
         updatedAt: string;
     }
 }
+
+// Chassis for comments API POST requests
 export interface ReplyEntity {
     snippet: {
         textOriginal: string;
         parentId: string;
     }
 }
+
+// Chassis for comments API POST request responses
 export interface ReplyEntityResponse extends JsonResponse, Reply {}
+
+// Interface for ipinfo API GET request responses
 export interface IpinfoResponse extends JsonResponse {
     [key: string]: unknown;
     ip: string;

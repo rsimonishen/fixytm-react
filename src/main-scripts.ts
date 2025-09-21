@@ -10,6 +10,7 @@ import {
 import type { Video } from "./related-interfaces";
 import fixytm from "./cache-init";
 
+// Sort an array of videos by criteria and automatically rearrange it correspondingly
 export async function sortPlaylist(id: string, criteria: string, rearrange: boolean): Promise<Video[] | void> {
     const playlist: PlaylistCache = await collectPlaylist(id, true)
     const keys = playlist.getCache("keys") as Video[];
@@ -48,6 +49,7 @@ export async function sortPlaylist(id: string, criteria: string, rearrange: bool
     } else return output;
 }
 
+// Arrange a playlist accordingly to an order of videos
 export async function arrangePlaylist(order: Video[],
     playlist: PlaylistCache): Promise<void> {
     await renderPlaylist(order.length, fetchPlaylistDOM());
@@ -59,6 +61,8 @@ export async function arrangePlaylist(order: Video[],
     playlist.setCache("currentOrder", order);
 }
 
+// Checks if user is listening a radio station that entirely belongs to one of the cached playlists,
+// and rearranges that radio station correspondingly (only works visually)
 export function matchRadioStation(playlist?: PlaylistCache): void {
     const playlists: PlaylistCache[] = fixytm.cache.playlists;
     const queueRenderer: HTMLElement = document.querySelector("div#contents.ytmusic-player-queue")!;

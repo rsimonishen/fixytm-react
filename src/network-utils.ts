@@ -1,3 +1,4 @@
+// Supple class purely to avoid operation, type and syntax errors in network requests
 export class RequestString {
     private content: string;
     constructor (content: string) {
@@ -13,6 +14,7 @@ export class RequestString {
     get URL(): string { return this.content; }
 }
 
+// Chassis for all subsequent GET requests sent by the extension
 export async function fetchJSON (req: RequestString, headers?: Record<string, string>): Promise<string> {
     return await new Promise((resolve, reject) => {
         const xhr: XMLHttpRequest = new XMLHttpRequest();
@@ -30,6 +32,7 @@ export async function fetchJSON (req: RequestString, headers?: Record<string, st
     })
 }
 
+// Chassis for all subsequent POST requests sent by the extension
 export async function insertJSON (req: RequestString, body: string, headers?: Record<string, string>): Promise<string> {
     return await new Promise((resolve, reject) => {
         const xhr: XMLHttpRequest = new XMLHttpRequest();
