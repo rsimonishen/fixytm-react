@@ -12,7 +12,7 @@
   "dependencies": {
     "@googleapis/oauth2": "^4.0.0",
     "@googleapis/youtube": "^29.0.0",
-    "googleapis": "^160.0.0",
+    "bootstrap": "^5.3.8",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
