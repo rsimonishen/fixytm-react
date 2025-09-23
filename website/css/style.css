@@ -1,0 +1,16 @@
+body {
+    background-image: url('../img/bubble-background.jpg');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+div#layout {
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    contain: layout;
+    position: fixed;
+}
