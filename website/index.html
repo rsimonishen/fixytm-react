@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/bootstrap.min.css">
 </head>
 <body>
-    <div id="layout">
+    <div id="layout" class="overflow-y-auto">
         <div class="container py-5 text-white">
             <header class="py-5 mb-4 border-bottom text-center">
                 <h1 class="text-white font-monospace display-1">FIX.YTM</h1>
@@ -16,8 +16,44 @@
                     Enhance your YouTube Music experience by adding missing features from the main YouTube platform
                 </p>
             </header>
-            <section class="py-2">
-
+            <section class="py-5 row">
+                <div class="col-xl-3 col-md-4 col-sm-6 col-12 d-flex flex-column display-2 font-monospace p-5 p-sm-0" id="fixytm-button">
+                    Fix
+                </div>
+                <div class="col-xl-9 col-md-8 col-sm-6 col-12 p-3">
+                    <h2 class="border-bottom pb-4">
+                        What is FIX.YTM?
+                    </h2>
+                    <p class="lead lh-lg">
+                        FIX.YTM is a browser extension that allows you to access extended YouTube Music functionality concerning your user-content interactions and some visual features.
+                        With it, you will finally be able to view content statistics, topic, genre, read and leave your own comments on it, view date of publication, and more.
+                        It also provides some visual utilities, such as sorting playlists to view most popular, most liked or recent songs, etc.
+                    </p>
+                </div>
+            </section>
+            <section class="py-5 px-4 px-sm-0 row">
+                <div class="col-xl-9 col-md-8 col-sm-6 col-12 p-3 order-2 order-sm-1">
+                    <h2 class="border-bottom pb-4">
+                        Solutions behind FIX.YTM
+                    </h2>
+                    <p>FIX.YTM met a bunch of challenges throughout its development and had to implement these solutions: </p>
+                    <ul class="lead lh-lg">
+                        <li>Authorization using OAuth2 & redirect flow</li>
+                        <li>Accessing Google APIs using query HTTP requests</li>
+                        <li>Filtering region restricted content utilizing HTTP requests to ipinfo.io</li>
+                        <li>Using React and React DOM to render responsive overlay menus</li>
+                    </ul>
+                </div>
+                <div class="col-xl-3 col-md-4 col-sm-6 col-12 d-flex flex-column font-monospace p-sm-3 p-2 fixytm-tab order-1 order-sm-2">
+                    <ul>
+                        <li>OAuth2</li>
+                        <li>Return authorization flow</li>
+                        <li>Content filtering</li>
+                        <li>Context-aware interface</li>
+                        <li>Non-intrusive design</li>
+                        <li>Aggressive application of React</li>
+                    </ul>
+                </div>
             </section>
         </div>
     </div>
