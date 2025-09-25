@@ -1,0 +1,1 @@
+Privacy policy of FIX.YTM browser extension dictates complete privacy. The browser extension may use certain sensitive data, such as user's location based on their IP address, but the data utilization is kept strictly for the operation of the extension. The extension does not store, collect or sell your data to any third parties or use it for its own purposes.

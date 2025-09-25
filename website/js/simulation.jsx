@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
+import '../css/style.css'
+import '../css/bootstrap.min.css'
 import thumbnail from "../img/musicicon.png"
 import supdanger from "../img/supdanger.jpeg"
 
 export function Simulation() {
     const [mode, setMode] = useState("")
-    const [sorting, setSorting] = useState("views")
     const [videoViewed, setVideoViewed] = useState(false)
     const demoFrame = useRef(null);
 
@@ -51,28 +52,27 @@ export function Simulation() {
     }
 
     function Tab({mode: mode}) {
-        let controls = null
         switch (mode) {
 
             case "/playlists":
                 return <div className={"fix-ytm-tab col-12 col-sm-6 col-lg-4 col-xxl-3 d-flex align-items-center justify-content-around flex-row flex-wrap"}>
                     <button
-                        className={"fix-ytm-functionality-item text-white font-monospace"}
+                        className={"fix-ytm-functionality-item"}
                         onClick={() => {sortVideos("views")}}>
                         Sort by views
                     </button>
                     <button
-                        className={"fix-ytm-functionality-item text-white font-monospace"}
+                        className={"fix-ytm-functionality-item"}
                         onClick={() => {sortVideos("likes")}}>
                         Sort by likes
                     </button>
                     <button
-                        className={"fix-ytm-functionality-item text-white font-monospace"}
+                        className={"fix-ytm-functionality-item"}
                         onClick={() => {sortVideos("date")}}>
                         Sort by date
                     </button>
                     <button
-                        className={"fix-ytm-functionality-item text-white font-monospace"}
+                        className={"fix-ytm-functionality-item"}
                         onClick={() => {sortVideos("duration")}}>
                         Sort by duration
                     </button>
@@ -84,16 +84,16 @@ export function Simulation() {
                                 <header className={"row align-items-center"}>
                                     <img className={"col-4"} src={supdanger} alt="thumbnail" />
                                     <div className={"col-8 py-1"}>
-                                        <p className={"text-end text-white lead"}>
+                                        <p className={"text-end lead"}>
                                             What's Up Danger
                                         </p>
-                                        <h6 className={"text-end text-white"}>
+                                        <h6 className={"text-end"}>
                                             Blackway - Topic
                                         </h6>
-                                        <h6 className={"text-end text-white"}>
+                                        <h6 className={"text-end"}>
                                             2018.12.13
                                         </h6>
-                                        <h6 className={"text-end text-white"}>
+                                        <h6 className={"text-end"}>
                                             00:03:43
                                         </h6>
                                     </div>
@@ -110,17 +110,17 @@ export function Simulation() {
                                     </p>
                                 </section>
                                 <footer>
-                                    <h5 className={"lead text-start font-monospace text-white py-2"}>
+                                    <h5 className={"lead text-start py-2"}>
                                         Comments
                                     </h5>
-                                    <p className={"text-start text-white"}>
+                                    <p className={"text-start"}>
                                         Comments are only available in the full version of the extension
                                     </p>
                                 </footer>
                             </div> :
                             <div className={"w-100 h-100 d-flex justify-content-center align-items-center"}>
                                 <button
-                                    className={"fix-ytm-functionality-item text-white font-monospace"}
+                                    className={"fix-ytm-functionality-item"}
                                     onClick={() => setVideoViewed(true)}>
                                     View video
                                 </button>
@@ -135,16 +135,16 @@ export function Simulation() {
         function Video({title, views, likes, date, duration, icon}) {
             return <div className={"fix-ytm-video row bg-black py-1 align-items-center"}>
                 <img src={icon} alt="thumbnail" className={"col-2 col-md-1"} />
-                <p className={"col-8 col-md-9 text-white"}>{title}</p>
-                <p className={"col-2 text-white video-duration text-end"}>{duration}</p>
+                <p className={"col-8 col-md-9"}>{title}</p>
+                <p className={"col-2 video-duration text-end"}>{duration}</p>
                 <ul className={"col-12 list-unstyled row"}>
-                    <li className={"col-6 col-md-4 text-center text-white video-views font-monospace"}>
+                    <li className={"col-6 col-md-4 text-center video-views"}>
                         {views} views
                     </li>
-                    <li className={"col-6 col-md-4 text-center text-white video-likes font-monospace"}>
+                    <li className={"col-6 col-md-4 text-center video-likes"}>
                         {likes} likes
                     </li>
-                    <li className={"col-12 col-md-4 text-center text-white video-date font-monospace"}>
+                    <li className={"col-12 col-md-4 text-center video-date"}>
                         {date}
                     </li>
                 </ul>
@@ -168,7 +168,7 @@ export function Simulation() {
     }
 
     return <>
-        <div id={"mode-select"} className={"row"}>
+        <div id={"mode-select"} className={"row font-monospace text-white"}>
             <button
                 className={"simulation-mode col-6 text-white py-3"}
                 onClick={() => setMode("/playlists")}
@@ -182,7 +182,7 @@ export function Simulation() {
                 Videos
             </button>
         </div>
-        <div id={"simulation"} className={"row p-4 align-items-center"} style={{backgroundClip: mode ? "padding-box" : "content-box"}}>
+        <div id={"simulation"} className={"row p-4 align-items-center text-white"} style={{backgroundClip: mode ? "padding-box" : "content-box"}}>
             <Tab mode={mode} />
             <div className={"d-none d-sm-block col-sm-1"} />
             <YTMFrame mode={mode} />

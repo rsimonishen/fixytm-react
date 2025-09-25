@@ -45,6 +45,7 @@ div.fix-ytm-tab:hover, div.fix-ytm-tab:active {
     background-color: rgba(255, 0, 51, 0.3);
     color: #ffffff;
     border-radius: 50%;
+    border: none;
     z-index: 9999;
     font-size: 18px;
     font-family: monospace;
@@ -52,9 +53,13 @@ div.fix-ytm-tab:hover, div.fix-ytm-tab:active {
 .fix-ytm-functionality-item:hover {
     background-color: rgba(255, 0, 51, 1);
     cursor: pointer;
+    border: none;
+    text-decoration: none;
 }
 .fix-ytm-functionality-item:active {
     background-color: rgba(200, 0, 40, 1);
+    border: none;
+    text-decoration: none;
 }
 button.simulation-mode {
     cursor: pointer;
@@ -73,4 +78,31 @@ button.simulation-mode {
 }
 #simulation {
     background-color: rgba(0, 0, 0, 0.25)
+}
+a#goback {
+    position: fixed;
+    right: 100px;
+    bottom: 100px;
+}
+figure {
+    position: relative;
+}
+figure figcaption {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    opacity: 0;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    transition: opacity 0.5s ease 0.3s;
+}
+figure:hover figcaption {
+    opacity: 1;
+}
+
+@media (max-width: 992px) {
+    a#goback {
+        right: 10px;
+        bottom: 10px;
+    }
 }
