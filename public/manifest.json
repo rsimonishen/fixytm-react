@@ -1,11 +1,26 @@
 {
-  "name": "FIX.YTM-React",
+  "name": "FIX.YTM - The ultimate YouTube Music extension",
   "manifest_version": 3,
-  "version": "1.0.7",
-  "description": "Enhance your experience of using YouTube Music by fixing many broken functions and adding new UX features",
+  "version": "1.0.8",
+  "description": "Transcend the limits of your YouTube Music sessions by adding many new UX/UI features and access to authorised actions previously unavailable on YTM. Also available in open source on GitHub",
   "content_scripts": [{
     "matches": ["https://music.youtube.com/*"],
     "css": ["fixytm-react.css"],
     "js": ["fixytm-react.js"]
-  }]
+  }],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "FIXYTM_Main_16px.png",
+      "32": "FIXYTM_Main_32px.png",
+      "48": "FIXYTM_Main_48px.png",
+      "128": "FIXYTM_Main_128px.png"
+    }
+  },
+  "icons": {
+    "16": "FIXYTM_Main_16px.png",
+    "32": "FIXYTM_Main_32px.png",
+    "48": "FIXYTM_Main_48px.png",
+    "128": "FIXYTM_Main_128px.png"
+  }
 }

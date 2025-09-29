@@ -1,0 +1,66 @@
+body {
+    width: 250px;
+    height: 375px;
+    background-image: url('bubble-background.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-clip: border-box;
+}
+div#layout {
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    inset: 0;
+    margin: 0;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    contain: layout;
+    position: fixed;
+    overflow: hidden;
+}
+h1 {
+    text-align: center;
+    color: #FFF;
+    padding: 20px 0;
+    border-bottom: 2px solid #fff;
+    font-family: monospace;
+    margin-bottom: 25px;
+}
+
+div#fix-ytm-container {
+    overflow: hidden;
+}
+
+a#fix-ytm-button {
+    aspect-ratio: 1 / 1;
+    border: none;
+    display: block;
+    background:
+            linear-gradient(0deg, transparent 47%, #FF0000 47%, #FF0000 53%, transparent 53%),
+            linear-gradient(90deg, transparent 47%, #FF0000 47%, #FF0000 53%, transparent 53%);
+    animation: container-rotation 6s linear infinite;
+    max-width: 100%;
+    padding: 15%;
+    background-clip: padding-box;
+}
+a#fix-ytm-button img {
+    animation: img-rotation 3s linear infinite reverse;
+    max-width: 100%;
+}
+
+@keyframes container-rotation {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes img-rotation {
+    from {
+        transform: rotate(-90deg)
+    }
+    to {
+        transform: rotate(270deg)
+    }
+}

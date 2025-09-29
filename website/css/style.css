@@ -9,18 +9,28 @@ div#layout {
     contain: layout;
     position: fixed;
 }
-div#fix-ytm-button {
+a#fix-ytm-button {
     aspect-ratio: 1 / 1;
-    border-radius: 50%;
-    cursor: pointer;
-    background-color: rgba(255, 0, 51, 0.3);
-    justify-content: center;
-    align-items: center;
-    background-clip: content-box;
+    border: none;
+    display: block;
+    background:
+        linear-gradient(0deg, transparent 47%, #FF0000 47%, #FF0000 53%, transparent 53%),
+        linear-gradient(90deg, transparent 47%, #FF0000 47%, #FF0000 53%, transparent 53%);
+    transition: transform 1s ease-in-out;
+    max-width: 100%;
 }
-div#fix-ytm-button:hover, div#fix-ytm-button:active {
-    background-color: rgba(255, 0, 40, 1);
+a#fix-ytm-button img {
+    transform: rotate(var(--imgangle));
+    transition: transform 1.8s ease-in-out ;
+    --imgangle: 30deg;
 }
+a#fix-ytm-button:hover img, div#fix-ytm-button:active img, div#fix-ytm-button:focus img {
+    --imgangle: -75deg;
+}
+a#fix-ytm-button:hover, div#fix-ytm-button:active, div#fix-ytm-button:focus {
+    transform: rotate(45deg)
+}
+
 div.fix-ytm-tab {
     height: 300px;
     border: #ff0033 2px solid;

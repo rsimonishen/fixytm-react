@@ -60,7 +60,7 @@ export function formatDuration(duration: string): string {
     return matches.slice(1).map(item => item ? item.padStart(2, "0") : "00").join(":")
 }
 
-// Check if a comment contains illegal embedded emojis that are unsupported outside Youtube
+// Check if a comment contains illegal embedded emojis that are unsupported outside YouTube
 export function commentContentWarning(comment: string): boolean {
     return /<a href="[\w-]+\/[\w-]+"><\/a>/.test(comment)
 }
@@ -89,8 +89,8 @@ export async function collectVideo(id: string): Promise<Video> {
 }
 
 // Fetch video comments from cache or fetch them by video ID
-export async function collectComments(videoId: string): Promise<Comment[] | Error> {
-    return fixytm.cache.videos.find((video: Video) => video.id === videoId)?.comments || (await fetchComments(videoId, true));
+export async function collectComments(video: Video): Promise<Comment[] | Error> {
+    return video?.comments || (await fetchComments(video.id, true));
 }
 
 // Update playlist nodes list (useful for when the playlist is rerendered)

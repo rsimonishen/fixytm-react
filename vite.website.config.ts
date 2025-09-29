@@ -13,6 +13,7 @@ export default defineConfig({
             input: {
                 index: '/home/cloakf4ce/projects/fixytm-react/website/index.html',
                 demo: '/home/cloakf4ce/projects/fixytm-react/website/tryitout.html',
+                privacy: '/home/cloakf4ce/projects/fixytm-react/website/privacypolicy.html',
             }
         }
     },

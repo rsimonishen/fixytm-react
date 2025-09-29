@@ -6,6 +6,7 @@ export default defineConfig({
     plugins: [react()],
     build: {
         target: 'es2018',
+        sourcemap: true,
         lib: {
             entry: './src/main.tsx',
             name: 'FIXYTMReact',

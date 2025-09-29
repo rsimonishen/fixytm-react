@@ -1,6 +1,6 @@
 import { PlaylistCache } from "./cache-classes";
 import { sleep } from "./helper-scripts";
-import type { Video } from "./related-interfaces";
+import type {Channel, Video} from "./related-interfaces";
 
 const hash: {
     access_token?: string;
@@ -18,16 +18,17 @@ const fixytm = {
         GOOGLE_ACCESS_TOKEN_EXPIRES_IN: hash.expires_in ?
             Number(hash.expires_in!) : undefined as number | undefined,
         GOOGLE_ACCESS_TOKEN_EXPIRED: !(hash.expires_in && hash.access_token),
-        IPINFO_API_KEY: '8faf88230ab83b'
     },
     // FIX.YTM constants
     MAX_PLAYLIST_PAGE_ITEMS: 50,
     MAX_VIDEOS_PAGE_ITEMS: 50,
     MAX_COMMENTS_PAGE_ITEMS: 100,
+    MAX_CHANNELS_PAGE_ITEMS: 50,
     MAX_CYCLES_PER_FETCH_COMMENTS: 5,
+    MAX_CYCLES_PER_FETCH_CHANNELS: 5,
     MAX_CYCLES_PER_FETCH_PLAYLIST: 10,
     MAX_CYCLES_PER_FETCH_VIDEO: 10,
-    MAX_CYCLES_PER_RENDER: 50,
+    MAX_CYCLES_PER_RENDER: 20,
     // Caching body
     cache: {
         playlists: [] as PlaylistCache[],
@@ -37,9 +38,11 @@ const fixytm = {
             map: undefined as Map<Video, HTMLElement> | undefined,
         },
         commentThreads: [] as Comment[],
+        channels: [] as Channel[],
     },
     user: {
         USER_COUNTRY: undefined as string | undefined,
+        CHANNEL: undefined as Channel | undefined,
     },
     // FIX.YTM Mutation observer
     observer: undefined as MutationObserver | undefined,

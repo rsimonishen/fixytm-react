@@ -49,3 +49,20 @@ export async function insertJSON (req: RequestString, body: string, headers?: Re
         xhr.send(body);
     })
 }
+
+export async function deleteRequest (req: RequestString, headers?: Record<string, string>): Promise<boolean> {
+    return await new Promise((resolve, reject) => {
+        const xhr: XMLHttpRequest = new XMLHttpRequest();
+        xhr.open("DELETE", req.URL);
+        if (headers) for (const key in headers) xhr.setRequestHeader(key, headers[key]);
+        xhr.onload = () => {
+            console.log(`FIX.YTM React: ${req.URL} deleted ${xhr.responseText}; status: ${xhr.status}`);
+            if (xhr.status === 204) resolve(true); else reject(xhr.statusText);
+        }
+        xhr.onerror = () => {
+            console.error(`FIX.YTM React error: ${req.URL} deletion failed: ${xhr.status} ${xhr.responseText}`);
+            reject(xhr.statusText);
+        }
+        xhr.send();
+    })
+}
