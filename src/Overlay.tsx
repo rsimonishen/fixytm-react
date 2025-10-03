@@ -19,7 +19,7 @@ import {
     fetchComments,
     fetchReplies,
     insertCommentThread,
-    insertReply
+    insertReply, search
 } from "./network-scripts";
 
 // The overlay renderer
@@ -39,24 +39,33 @@ export function Overlay(): ReactElement {
     fixytm.observer = fixytmObserver;
 
     // State control
+    // Overlay on/off
     const [overlay, showOverlay] = useState<boolean>(false);
+    // Overlay mode (resembles current page type)
     const [mode, setMode] = useState<string>("/");
+    // Supposed to be true if OAuth2 token is still relevant and false if it's not present or outdated
     const [authorised, authorise] = useState<boolean>(false);
+    // Video panel on/off
     const [videoPanel, showVideoPanel] = useState<boolean>(false);
+    // Current video viewed in video panel
     const [viewedVideo, setViewedVideo] = useState<Video | undefined>(undefined);
+    // Displayed comments in comments section (will probably get deprecated)
     const [viewedVideoComments, setViewedVideoComments] = useState<Comment[] | Error>([]);
+    // Current replied comment
     const [repliedComment, setRepliedComment] = useState<Comment | undefined>(undefined);
+    // Text area for user comments
     const commentTextArea = useRef<HTMLTextAreaElement>(null)
 
     // Comment section reset upon change in the video
     useEffect(() => {
         setViewedVideoComments([]);
+        setRepliedComment(undefined);
     }, [viewedVideo]);
 
-    // FIX.YTM Mutation observer may not connect to all nodes that require observation
-    // within the first attempt, so this effect stands for retry for each of the targets,
-    // and also prevents the observer from connecting to one target multiple times,
-    // which causes massive throttling and waste of resource
+    /* FIX.YTM Mutation observer may not connect to all nodes that require observation
+     within the first attempt, so this effect stands for retry for each of the targets,
+     and also prevents the observer from connecting to one target multiple times,
+     which causes massive throttling and waste of resource */
     useEffect(() => {
         if (!fixytm.observerConnected) {
             try {
@@ -72,13 +81,13 @@ export function Overlay(): ReactElement {
         }
         if (fixytm.apiKeys.GOOGLE_API_KEY_KIND === "OAuth2"
             && !fixytm.apiKeys.GOOGLE_ACCESS_TOKEN_EXPIRED) authorise(true);
-        else authorise(false)
+        else authorise(false) // Set authorization to false as soon as the token expires and the app sees it
     });
 
     // Render the primary control panel
     function MainPanel ({authorised, mode}: {authorised: boolean, mode: string}) {
-        // Render controls for the primary control panel accordingly
-        // to the section of the website the user is currently in
+        /* Render controls for the primary control panel accordingly
+         to the section of the website the user is currently in */
         function Controls({mode}: {mode: string}) {
             switch (mode) {
                 case "/playlist":
@@ -164,8 +173,8 @@ export function Overlay(): ReactElement {
 
     // Render the video interaction & info panel
     function VideoPanel ({video}: {video: Video | undefined}) {
+        // Render comment section if there are comments and they're present in cache
         function Comments({contents, video}: {contents: Error | Comment[], video: Video}) {
-            // Render comment section if there are comments and they're present in cache
             const [, rerender] = useReducer(x => !x, false)
 
             // Renderer for the textarea for user comment
@@ -229,7 +238,7 @@ export function Overlay(): ReactElement {
                             <button
                                 title={"Delete this comment"}
                                 onClick={async () => {
-                                    deleteCommentThread(comment).then((response) => { if (response) rerender() })
+                                    deleteCommentThread(comment).then(response => { if (response) rerender() })
                                 }}>Delete</button>
                             <span title={"This comment is yours"}>i</span>
                         </> : null}
@@ -271,7 +280,7 @@ export function Overlay(): ReactElement {
                                                 <button
                                                     title={"Delete this reply"}
                                                     onClick={async () => {
-                                                        deleteReply(reply).then((response) => { if (response) rerender() })
+                                                        deleteReply(reply).then(response => { if (response) rerender() })
                                                     }}>Delete</button>
                                                 <span title={"This reply is yours"}>i</span>
                                             </> : null}
@@ -284,7 +293,7 @@ export function Overlay(): ReactElement {
                             <div className={"fix-ytm-view-thread"}>
                                 <button
                                     onClick={async () => {
-                                        if (!comment.replies) fetchReplies(comment).then(() => rerender());
+                                        if (!comment.replies) fetchReplies(comment).then(rerender);
                                     }}>View replies</button></div>
                         </>
                     }
@@ -294,9 +303,26 @@ export function Overlay(): ReactElement {
             switch (true) {
                 case video.autoGenerated:
                     console.log("FIX.YTM React inconvenience: viewed video is automatically generated by YouTube, therefore its comments are closed or unavailable")
-                    return <p>
-                        FIX.YTM React inconvenience: this video is automatically generated by YouTube, therefore its comments are closed or unavailable
-                    </p>
+                    return <>
+                        <p>
+                            FIX.YTM React inconvenience: this video is automatically generated by YouTube, therefore its comments are closed or unavailable
+                        </p>
+                        <button
+                            className={"fix-ytm-functionality-item"}
+                            onClick={async () => {
+                                search({type: "video", query: video.snippet.title}).then(result => collectVideo((result as {
+                                    id: {
+                                        videoId: string;
+                                        kind: string;
+                                    }
+                                }).id.videoId)).then(video => {
+                                    setViewedVideo(video)
+                                    setViewedVideoComments([])
+                                })
+                            }}
+                            title={"Load a search result for the title of this video to read the comments on it. (Experimental feature)"}
+                            style={{margin: "auto", marginTop: "15px"}}>Load origin</button>
+                    </>
                 case contents instanceof Error:
                     console.error(`FIX.YTM React error: Comments: ${contents}`);
                     return <p>{contents.message}</p>;
@@ -304,23 +330,24 @@ export function Overlay(): ReactElement {
                     <button
                         className={"fix-ytm-functionality-item"}
                         onClick={async () => {
-                            collectComments(viewedVideo!).then((comments) => setViewedVideoComments(comments));
+                            collectComments(viewedVideo!).then(comments => setViewedVideoComments(comments));
                         }}
                         title={"View current video comments"}
                         style={{margin: "auto", marginTop: "15px"}}>View comments</button></> : <>
                     {video.commentsOpen === "open" ? <UserCommentField video={video} repliedComment={repliedComment} /> :
                         video.commentsOpen === "closed" ? <p>
-                            FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason.
+                            FIX.YTM React: The comment thread for this video is unavailable for an unknown reason.
                         </p> : null}
                     <button
                         className={"fix-ytm-functionality-item"}
                         onClick={async () => {
-                            collectComments(viewedVideo!).then((comments) => setViewedVideoComments(comments));
+                            collectComments(viewedVideo!).then(comments => setViewedVideoComments(comments));
                         }}
                         title={"See if you can leave a comment"}
                         style={{margin: "auto", marginTop: "15px", display: video.commentsOpen ? "none" : "flex"}}>Leave a comment</button>
                 </>
-                case (contents as Comment[]).length > 0: return <>
+                case (contents as Comment[]).length > 0: return <section id={"fix-ytm-video-comments"}>
+                    <p className={"fix-ytm-video-data"}>Comments</p>
                     <UserCommentField video={video} repliedComment={repliedComment} />
                     {
                         (contents as Comment[]).map(comment => (
@@ -345,7 +372,7 @@ export function Overlay(): ReactElement {
                                     }}>View more comments</button></div>
                         </> : null
                     }
-                </>;
+                </section>;
             }
         }
 
@@ -378,10 +405,7 @@ export function Overlay(): ReactElement {
                     {video.statistics.commentCount || "0"} comments
                 </p>
             </section>
-            <section id={"fix-ytm-video-comments"}>
-                <p className={"fix-ytm-video-data"}>Comments</p>
-                <Comments contents={viewedVideoComments} video={video} />
-            </section>
+            <Comments contents={viewedVideoComments} video={video} />
         </> : null;
     }
 

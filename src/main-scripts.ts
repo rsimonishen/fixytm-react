@@ -12,9 +12,9 @@ import fixytm from "./cache-init";
 
 // Sort an array of videos by criteria and automatically rearrange it correspondingly
 export async function sortPlaylist(id: string, criteria: string, rearrange: boolean): Promise<Video[] | void> {
+    await renderPlaylist(fetchPlaylistDOM());
     const playlist: PlaylistCache = await collectPlaylist(id, true)
     const keys = playlist.getCache("keys") as Video[];
-    await renderPlaylist(keys.length, fetchPlaylistDOM());
     if (!playlist.getCache("mapOfDOM") || !playlist.getCache("mapOfDOMRelevance")) mapPlaylist(keys, playlist);
     const output: Video[] = [];
     let target: string;
@@ -45,6 +45,7 @@ export async function sortPlaylist(id: string, criteria: string, rearrange: bool
     }
 
     if (rearrange) {
+        await renderPlaylist(fetchPlaylistDOM());
         await arrangePlaylist(output, playlist);
     } else return output;
 }
@@ -52,7 +53,7 @@ export async function sortPlaylist(id: string, criteria: string, rearrange: bool
 // Arrange a playlist accordingly to an order of videos
 export async function arrangePlaylist(order: Video[],
     playlist: PlaylistCache): Promise<void> {
-    await renderPlaylist(order.length, fetchPlaylistDOM());
+    await renderPlaylist(fetchPlaylistDOM());
     if (!playlist.integrity)
         throw new Error("FIX.YTM React error: playlist not found or its cache isn't full");
     const map: Map<Video, HTMLElement> = playlist.getCache("mapOfDOM") as Map<Video, HTMLElement>;

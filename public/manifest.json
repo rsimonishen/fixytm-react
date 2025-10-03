@@ -2,7 +2,7 @@
   "name": "FIX.YTM - The ultimate YouTube Music extension",
   "manifest_version": 3,
   "version": "1.0.8",
-  "description": "Transcend the limits of your YouTube Music sessions by adding many new UX/UI features and access to authorised actions previously unavailable on YTM. Also available in open source on GitHub",
+  "description": "Transcend the limits of your YouTube Music by adding many new features & access to authorised actions previously unavailable on YTM",
   "content_scripts": [{
     "matches": ["https://music.youtube.com/*"],
     "css": ["fixytm-react.css"],

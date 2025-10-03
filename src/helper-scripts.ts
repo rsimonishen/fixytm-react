@@ -6,9 +6,12 @@ import { cachePlaylist, matchPlaylistCache } from "./cache-scripts";
 import type { Comment } from "./related-interfaces";
 
 // Filter content with region restriction applied towards user
-export function filterVideos(videos: Video[]): Video[] {
-    if (!fixytm.user.USER_COUNTRY) throw new Error("FIX.YTM React error: user country not set");
-    return videos.filter(video => video.contentDetails.regionRestriction?.allowed?.includes(fixytm.user.USER_COUNTRY!) || !video.contentDetails.regionRestriction?.blocked?.includes(fixytm.user.USER_COUNTRY!))
+export function filterVideos(collectedVideos: Video[], DOMVideoIDs: string[] = [...fetchPlaylistDOM().querySelectorAll("ytmusic-responsive-list-item-renderer")].map(element =>   {
+    try { return (element.querySelector("yt-formatted-string.title > a")! as HTMLAnchorElement).href.match(/v=([^&]+)/)![1] }
+    catch (e) { console.error(`FIX.YTM React error: something went wrong during reading the playlist. Playlist-related features may not work with currently viewed playlist. More about error: ${e}`); return "" }
+    }
+)): Video[] {
+    return collectedVideos.filter(video => DOMVideoIDs.includes(video.id))
 }
 
 // Get ID of the playlist user is viewing
@@ -108,16 +111,14 @@ export function mapPlaylist(
 // (YouTube initially doesn't render more than 100 playlist shelves;
 // useful for when there's more than 100 songs in a playlist)
 export async function renderPlaylist(
-    expectedShelves: number,
     wrapper: HTMLElement = fetchPlaylistDOM()): Promise<void> {
-    const present = wrapper.childNodes;
-    let cycle: number = 0;
-    while (present.length < expectedShelves && cycle++ < fixytm.MAX_CYCLES_PER_RENDER) {
-        window.scrollTo(0, document.body.scrollHeight);
-        await sleep(100);
+    let undone = true;
+    const continuationsCollection = wrapper.getElementsByTagName("ytmusic-continuation-item-renderer");
+    while (undone) {
+        if (continuationsCollection[0]) { continuationsCollection[0].scrollIntoView(); await sleep(500); } else undone = false;
     }
     window.scrollTo(0, 0);
 }
 
-// Sleep function
+// Short for sleep function
 export async function sleep(ms: number): Promise<void> { return new Promise((resolve) => setTimeout(resolve, ms)); }

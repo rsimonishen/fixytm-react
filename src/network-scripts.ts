@@ -4,7 +4,7 @@ import type {
     VideosResponse,
     CommentsResponse,
     Reply, RepliesResponse, CommentEntity, ReplyEntity,
-    Channel, ChannelsResponse,
+    Channel, ChannelsResponse, YTListResponse,
 } from "./related-interfaces";
 import {deleteRequest, fetchJSON, insertJSON, RequestString} from "./network-utils";
 import { collectVideo, filterVideos } from "./helper-scripts";
@@ -32,6 +32,7 @@ export async function fetchPlaylist (id: string, [key, isOauthAccessToken] = get
         `maxResults=${fixytm.MAX_PLAYLIST_PAGE_ITEMS}`,
         `${isOauthAccessToken ? "access_token" : "key"}=${key}`
     ]
+    const pageTokenIndex = args.length;
     let undone = true;
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_PLAYLIST) {
         const req: RequestString = new RequestString(`https://www.googleapis.com/youtube/v3/playlistItems?${args.join("&")}`);
@@ -39,13 +40,13 @@ export async function fetchPlaylist (id: string, [key, isOauthAccessToken] = get
         try { response = await fetchJSON(req) } catch (e) {console.error(`FIX.YTM React error: fetchPlaylist: ${e}`); return []}
         const obj = JSON.parse(response) as PlaylistItemsResponse;
         for (const item of obj.items) output.push(item.contentDetails.videoId)
-        if (obj.nextPageToken) { cycle++; args[4] = `pageToken=${obj.nextPageToken}` } else undone = false;
+        if (obj.nextPageToken) { cycle++; args[pageTokenIndex] = `pageToken=${obj.nextPageToken}` } else undone = false;
     }
 
     return output;
 }
 
-// Network function by fetching a collection of videos by their IDs
+// Network function for fetching a collection of videos by their IDs
 export async function fetchVideos (
     ids: string[], filter: boolean = true,
     cacheVideos: boolean = true,
@@ -77,11 +78,12 @@ export async function fetchVideos (
     return output;
 }
 
+// Network function for fetching a collection of channels by their IDs, or the user's channel
 export async function fetchChannels (
     ids: string[], mine: boolean = true,
     cacheChannels: boolean = true,
     [key, isOauthAccessToken] = getRelevantGapiKey()
-) {
+): Promise<Channel[] | Channel> {
     const output: Channel[] = [];
     let cycle = 0;
     const max = fixytm.MAX_CHANNELS_PAGE_ITEMS;
@@ -104,7 +106,7 @@ export async function fetchChannels (
         if (output.length < ids.length) cycle++; else undone = false;
     }
     if (cacheChannels) fixytm.cache.channels.push(...output.filter((channel) => !fixytm.cache.videos.find((cachedChannel) => channel.id === cachedChannel.id)));
-    return output;
+    return mineFactor ? output[0] : output;
 }
 
 // Network function for fetching an array of comments by video ID
@@ -122,8 +124,9 @@ export async function fetchComments(
         "order=relevance",
         `videoId=${videoId}`,
         `${isOauthAccessToken ? "access_token" : "key"}=${key}`,
-        `${nextPageToken ? `pageToken=${nextPageToken}` : null}`,
     ]
+    const pageTokenIndex = args.length;
+    args[pageTokenIndex] = nextPageToken ? `${`pageToken=${nextPageToken}`}` : ""
     let undone = true;
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
         const req = new RequestString(`https://www.googleapis.com/youtube/v3/commentThreads?${args.join("&")}`);
@@ -131,7 +134,7 @@ export async function fetchComments(
         try { response = await fetchJSON(req) } catch (e) { console.error(e); video.commentsOpen="closed"; return new Error(`FIX.YTM React error: The comment thread for this video is unavailable for an unknown reason. Read console for more info`) }
         const obj = JSON.parse(response) as CommentsResponse;
         for (const comment of obj.items) output.push(comment)
-        if (obj.nextPageToken) { cycle++; args[5] = `pageToken=${obj.nextPageToken}`; video.commentNextPageToken = obj.nextPageToken; }
+        if (obj.nextPageToken) { cycle++; args[pageTokenIndex] = `pageToken=${obj.nextPageToken}`; video.commentNextPageToken = obj.nextPageToken; }
         else { undone = false; video.commentNextPageToken = undefined; }
 
     }
@@ -154,6 +157,7 @@ export async function fetchReplies(
         `parentId=${thread.id}`,
         `${isOauthAccessToken ? "access_token" : "key"}=${key}`
     ]
+    const pageTokenIndex = args.length;
     let undone = true;
     while (undone && cycle < fixytm.MAX_CYCLES_PER_FETCH_COMMENTS) {
         const req = new RequestString(`https://www.googleapis.com/youtube/v3/comments?${args.join("&")}`);
@@ -161,7 +165,7 @@ export async function fetchReplies(
         try { response = await fetchJSON(req) } catch (e) { console.error(e); return new Error(`FIX.YTM React error: This comment thread is unavailable for an unknown reason. Read console for more info`) }
         const obj = JSON.parse(response) as RepliesResponse;
         for (const reply of obj.items) output.push(reply);
-        if (obj.nextPageToken) { cycle++; args[4] = `pageToken=${obj.nextPageToken}` } else undone = false;
+        if (obj.nextPageToken) { cycle++; args[pageTokenIndex] = `pageToken=${obj.nextPageToken}` } else undone = false;
     }
     thread.replies = { comments: output }
 
@@ -226,6 +230,7 @@ export async function insertReply(
     }
 }
 
+// Network function for deleting a comment thread by its ID
 export async function deleteCommentThread(
     comment: Comment,
     [key, isOauthAccessToken] = getRelevantGapiKey()) {
@@ -243,6 +248,7 @@ export async function deleteCommentThread(
     return result
 }
 
+// Network function for deleting a reply by its ID
 export async function deleteReply(
     reply: Reply,
     [key, isOauthAccessToken] = getRelevantGapiKey()) {
@@ -259,3 +265,29 @@ export async function deleteReply(
     return result
 }
 
+type SearchType = "channel" | "playlist" | "video"
+type SearchOrder = "date" | "rating" | "relevance" | "title" | "videoCount" | "viewCount"
+
+// Network function for retrieving a search result or a list of search results by query
+export async function search({
+    type = "video",
+    maxResults = 1,
+    order = "relevance",
+    channelId,
+    query
+}: {type: SearchType, maxResults?: number, order?: SearchOrder, channelId?: string, query: string}, [key, isOauthAccessToken] = getRelevantGapiKey()): Promise<unknown | unknown[]> {
+    const args = [
+        `part=snippet`,
+        `type=${type}`,
+        `maxResults=${maxResults}`,
+        `order=${order}`,
+        channelId ? `channelId=${channelId}` : null,
+        `q=${encodeURIComponent(query)}`,
+        `${isOauthAccessToken ? "access_token" : "key"}=${key}`,
+    ]
+    const req = new RequestString(`https://www.googleapis.com/youtube/v3/search?${args.join("&")}`);
+    let response;
+    try { response = await fetchJSON(req) } catch (e) { console.error(`FIX.YTM React error: search: ${e}`); return [] }
+    const list = JSON.parse(response) as YTListResponse;
+    return maxResults === 1 ? list.items[0] : list.items;
+}

@@ -41,7 +41,8 @@ const fixytm = {
         channels: [] as Channel[],
     },
     user: {
-        USER_COUNTRY: undefined as string | undefined,
+        // Collecting, storing and utilizing USER_COUNTRY has been deprecated starting from v1.0.8 in favor of a new content filtering algorithm based on DOM
+        // USER_COUNTRY: undefined as string | undefined,
         CHANNEL: undefined as Channel | undefined,
     },
     // FIX.YTM Mutation observer
